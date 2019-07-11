@@ -1,16 +1,18 @@
 import models from './../models';
 import Chatroom from './Chatroom';
+import Note from './../funcs/Note.js';
+
+import { generateID } from './../util';
 
 async function create (obj) {
-  const id = Math.floor(Math.random() * 3e14).toString();
-  obj.boardID = id;
+  const id = obj.boardID = generateID();
   const chatroom = await Chatroom.create(obj);
   const board = {
     id,
     createdAt: Date.now(),
     name: obj.name || null,
     avatar: obj.avatar || null,
-    members: [ obj.user ],
+    members: [ obj.user.id ],
     notes: [],
     chatrooms: [ chatroom.id ]
   };
@@ -25,24 +27,47 @@ async function get (id) {
   return await models.Board.findOne({ id });
 }
 
+async function edit (property, value) {
+  return await models.Board.updateOne({ id: obj.id }, { [property]: value }, { upsert: true });
+}
+
+async function del (id) {
+  return await models.Board.deleteOne({ id });
+}
+
+async function getNotes (id) {
+  const board = await this.get(id);
+  return await Note.getMultiple(board.notes)
+}
+
+async function getMember (boardID, memberID) {
+  return await models.Member.findByBoard(boardID, memberID);
+}
+
+async function getMembers (boardID) {
+  return await models.Member.find({ board: boardID });
+}
+
 async function join (id, user) {
-  console.log(`${user.id} is joining ${id}`)
   await models.Board.updateOne({ id }, {
     $addToSet: {
-      'members': user
+      'members': user.id
     }
   }, { upsert: true });
 
-  await models.User.updateOne({ id: user.id }, {
-    $addToSet: {
-      'boards': id
-    }
-  }, { upsert: true })
+  const member = { 
+    id: user.id,
+    joinedAt: Date.now(),
+    nickname: null,
+    board: id,
+    ranks: []
+  };
+  const dbBoard = new models.Member(member);
+  await dbBoard.save();
   return id;
 }
 
 async function leave (id, user) {
-  console.log(`${user.id} is leaving ${id}`)
   await models.Board.updateOne({ id: id }, {
     $filter: {
       input: 'members',
@@ -53,21 +78,18 @@ async function leave (id, user) {
     }
   });
 
-  await models.User.updateOne({ id: user.id }, {
-    $filter: {
-      input: 'boards',
-      as: 'board',
-      cond: {
-        $not: [ '$$board', id ]
-      }
-    }
-  })
+  await models.Member.deleteOne({ id: user.id, board: id });
   return id;
 }
 
 export default {
   create,
+  edit,
+  del,
   join,
   leave,
-  get
+  get,
+  getNotes,
+  getMember,
+  getMembers
 }
