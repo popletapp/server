@@ -1,25 +1,16 @@
 import models from './../models';
+import { generateID } from './../util';
 
 async function create (obj) {
-  const id = Math.floor(Math.random() * 5e14).toString();
+  const id = generateID();
   const chatroom = {
     id,
     createdAt: Date.now(),
     name: `${obj.name}'s chatroom` || null,
     avatar: obj.avatar || null,
-    members: [ obj.user ],
+    members: [ obj.user.id ],
     lastMessage: null,
-    messages: [
-      {
-        author: {
-          id: 0,
-          username: 'Poplet Helper',
-          avatar: null,
-          createdAt: Date.now()
-        },
-        content: 'Hey there! Need any help ah fuck it this is just a placeholder why am i putting so much god damn effort into this'
-      }
-    ]
+    messages: []
   };
 
   if (!obj.boardID) {
@@ -42,7 +33,7 @@ async function create (obj) {
 
 async function comment (obj) {
   const comment = {
-    id: Math.floor(Math.random() * 3e14),
+    id: generateID(),
     timestamp: Date.now(),
     author: obj.author,
     content: obj.content
@@ -55,6 +46,10 @@ async function getComment (id) {
   return await models.ChatroomComment.findOne({ id });
 }
 
+async function getComments (id) {
+  return await models.ChatroomComment.find({ chatroom: id });
+}
+
 async function get (id) {
   return await models.Chatroom.findOne({ id });
 }
@@ -63,5 +58,6 @@ export default {
   create,
   comment,
   getComment,
+  getComments,
   get
 }

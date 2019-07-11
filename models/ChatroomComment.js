@@ -6,6 +6,9 @@ const chtcmtSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
+  chatroom: {
+    type: String // chatroom ID
+  },
   author: {
     type: Object,
     required: true,

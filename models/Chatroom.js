@@ -14,9 +14,6 @@ const chatroomSchema = new mongoose.Schema({
   },
   lastMessage: { // last message (the actual comment object) as well as the timestamp
     type: Object
-  },
-  messages: {
-    type: Array // Array of objects
   }
 });
 

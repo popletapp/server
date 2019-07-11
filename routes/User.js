@@ -15,6 +15,13 @@ router.post(`/authenticate`, (req, res, next) => {
         .catch(err => next(err));
 })
 
+router.get(`/me/boards`, authorization, (req, res, next) => {
+  console.log(`${req.user.id} is requesting a list of all boards`)
+  User.listBoards(req.user.id)
+        .then(user => user ? res.json(user) : res.status(404))
+        .catch(err => next(err));
+})
+
 router.get(`/me`, authorization, (req, res, next) => {
   User.get(req.user.id)
         .then(user => user ? res.json(user) : res.status(404))
@@ -23,8 +30,8 @@ router.get(`/me`, authorization, (req, res, next) => {
 
 router.get(`/:id/boards`, authorization, (req, res, next) => {
   console.log(`${req.params.id} is requesting a list of all boards`)
-  User.get(req.params.id)
-        .then(user => user ? res.json(user.boards) : res.status(404))
+  User.listBoards(req.params.id)
+        .then(user => user ? res.json(user) : res.status(404))
         .catch(err => next(err));
 })
 

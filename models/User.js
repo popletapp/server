@@ -22,9 +22,6 @@ const userSchema = new mongoose.Schema({
   hash: {
     type: String,
     required: true
-  },
-  boards: {
-    type: Array
   }
 });
 
