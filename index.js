@@ -1,7 +1,8 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import config from './config';
-
+import http from 'http';
+import WebSocket from 'ws';
 import models, { connectDb } from './models';
 import { User, Board, Chatroom, Gateway, Note } from './routes';
 
@@ -13,7 +14,7 @@ const app = express();
 app.use(bodyParser.json())
 
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Origin', URL);
   res.setHeader('Access-Control-Allow-Headers', 'authorization,content-type');
   next();
@@ -51,15 +52,28 @@ app.use('/authorized', (req, res) => {
 })
 
 app.use(`${API_URL}/gateway`, Gateway)
-app.use(`${API_URL}/user`, User)
-app.use(`${API_URL}/board`, Board)
+app.use(`${API_URL}/users`, User)
+app.use(`${API_URL}/boards`, Board)
 app.use(`${API_URL}/notes`, Note)
-app.use(`${API_URL}/chatroom`, Chatroom)
+app.use(`${API_URL}/chatrooms`, Chatroom)
 
 app.use(function (err, req, res, next) {
   console.error(err.stack)
   res.status(500).send('Something broke!')
 })
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server, port: 7979 });
+
+wss.on('connection', function connection(ws) {
+  ws.on('message', function incoming(data) {
+    for (const client of wss.clients) {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(data));
+      }
+    }
+  });
+});
 
 connectDb().then(async () => {
   app.listen(config.port, () =>
