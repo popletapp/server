@@ -7,9 +7,9 @@ async function create (obj) {
     id,
     title: obj.title || null,
     content: obj.content || null,
-    createdAt: Date.now(),
+    createdAt: new Date().toISOString(),
     createdBy: obj.user,
-    modifiedAt: Date.now(),
+    modifiedAt: new Date().toISOString(),
     modifiedBy: obj.user,
     labels: [],
     assignees: [],
@@ -35,31 +35,38 @@ async function create (obj) {
 }
 
 async function update (obj) {
-  return await models.Note.updateOne({ id: obj.id }, {
+  const note = {
     id: obj.id,
     title: obj.title || null,
     content: obj.content || null,
     createdAt: obj.createdAt,
     createdBy: obj.createdBy,
-    modifiedAt: Date.now(),
+    modifiedAt: new Date().toISOString(),
     modifiedBy: obj.user,
     labels: obj.labels || [],
     assignees: obj.assignees || [],
     options: obj.options || {}
-  });
+  };
+  await models.Note.updateOne({ id: obj.id }, note);
+  return note;
+}
+
+async function del (id) {
+  return await models.Note.deleteOne({ id });
 }
 
 async function getMultiple (array) {
-  return await models.Note.find({ id: { $in: array } });
+  return await models.Note.find({ id: { $in: array } }, { _id: 0, __v: 0 });
 }
 
 async function get (id) {
-  return await models.Note.findOne({ id });
+  return await models.Note.findOne({ id }, { _id: 0, __v: 0 });
 }
 
 export default {
   create,
   update,
+  del,
   getMultiple,
   get
 }

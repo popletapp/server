@@ -6,9 +6,10 @@ async function create (obj) {
   const chatroom = {
     id,
     createdAt: Date.now(),
-    name: `${obj.name}'s chatroom` || null,
+    name: obj.name || null,
     avatar: obj.avatar || null,
-    members: [ obj.user.id ],
+    board: obj.boardID || null,
+    blacklist: obj.blacklist || null,
     lastMessage: null,
     messages: []
   };
@@ -29,6 +30,28 @@ async function create (obj) {
   await dbChatroom.save();
 
   return chatroom;
+}
+
+async function update (obj) {
+  const chatroom = {
+    id: obj.id,
+    name: obj.name || null,
+    avatar: obj.avatar || null,
+    board: obj.boardID || null,
+    blacklist: obj.blacklist || null,
+    lastMessage: null,
+    messages: []
+  };
+  await models.Chatroom.updateOne({ id: obj.id }, chatroom);
+  return chatroom;
+}
+
+async function del (id) {
+  return await models.Chatroom.deleteOne({ id });
+}
+
+async function getMultiple (array) {
+  return await models.Chatroom.find({ id: { $in: array } }, { _id: 0, __v: 0 });
 }
 
 async function comment (obj) {
@@ -56,6 +79,9 @@ async function get (id) {
 
 export default {
   create,
+  update,
+  del,
+  getMultiple,
   comment,
   getComment,
   getComments,
