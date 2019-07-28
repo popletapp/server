@@ -1,18 +1,31 @@
 import express from 'express';
 import bodyParser from 'body-parser';
+import Redis from 'ioredis';
 import config from './config';
+import SocketServer from 'socket.io';
+import secrets from './secrets';
 import http from 'http';
-import WebSocket from 'ws';
 import models, { connectDb } from './models';
-import { User, Board, Chatroom, Gateway, Note } from './routes';
+import ratelimit from 'express-rate-limit';
+import { User, Board, Chatroom, Gateway, Note, Invite } from './routes';
 
 const URL = 'http://localhost:3000';
 const API_VER = 'v1';
 const API_URL = `/api/${API_VER}`;
 const app = express();
+const rclient = new Redis({ host: '127.0.0.1' });
+
+rclient.once('ready', function() {
+  console.log('Redis ready');
+});
+
+// Global ratelimit - a maximum of 5 requests in 5 seconds
+const globalLimiter = ratelimit({
+  windowMs: 5e3,
+  max: 10
+})
 
 app.use(bodyParser.json())
-
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Origin', URL);
@@ -56,6 +69,7 @@ app.use(`${API_URL}/users`, User)
 app.use(`${API_URL}/boards`, Board)
 app.use(`${API_URL}/notes`, Note)
 app.use(`${API_URL}/chatrooms`, Chatroom)
+app.use(`${API_URL}/invites`, Invite)
 
 app.use(function (err, req, res, next) {
   console.error(err.stack)
@@ -63,20 +77,19 @@ app.use(function (err, req, res, next) {
 })
 
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server, port: 7979 });
+const io = new SocketServer(server);
+const authorize = require('./sockets/authorize').handle;
 
-wss.on('connection', function connection(ws) {
-  ws.on('message', function incoming(data) {
-    for (const client of wss.clients) {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(data));
-      }
-    }
-  });
+io.on('connection', (client) => {
+  client.on('authorize', (data) => {
+    authorize({ client, data, io, redis: rclient })
+  })
 });
 
 connectDb().then(async () => {
-  app.listen(config.port, () =>
+  server.listen(config.port, () =>
     console.log(`Poplet (server-side) is listening on ${config.port}!`),
   );
 });
+
+export default { ws: io }
