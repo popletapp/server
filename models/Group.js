@@ -8,10 +8,13 @@ const groupSchema = new mongoose.Schema({
   createdAt: {
     type: Date
   },
+  modifiedAt: {
+    type: Date
+  },
   name: {
     type: String,
   },
-  accessibleBy: {
+  blacklist: {
     type: Array // of member IDs
   },
   items: {

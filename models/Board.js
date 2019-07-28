@@ -27,6 +27,12 @@ const boardSchema = new mongoose.Schema({
     type: Array // of rank *objects*
     // The default rank will have the same ID as the board ID
   },
+  whitelist: {
+    type: Array // of user IDs or null if no whitelist
+  },
+  owner: {
+    type: String // user ID of owner
+  },
   chatrooms: {
     type: Array
   }

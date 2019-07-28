@@ -18,7 +18,7 @@ const memberSchema = new mongoose.Schema({
   }
 });
 
-memberSchema.statics.findByBoard = async (board, id) => await this.findOne({ board, id });
+memberSchema.statics.findByBoard = async function (board, id) { await this.findOne({ board, id }) };
 
 const Member = mongoose.model('Member', memberSchema);
 

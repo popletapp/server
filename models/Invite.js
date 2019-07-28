@@ -1,19 +1,24 @@
 import mongoose from 'mongoose';
 
 const inviteSchema = new mongoose.Schema({
-  id: {
+  code: {
     type: String,
     unique: true
   },
-  name: {
-    type: String,
-    required: true
+  board: {
+    type: String // board ID
   },
-  members: {
-    type: Object
+  createdAt: {
+    type: Date
   },
-  lastMessage: { // last message (the actual comment object) as well as the timestamp
-    type: Object
+  createdBy: {
+    type: String // user ID
+  },
+  whitelistedMembers: {
+    type: Array // array of user IDs or null for no whitelist
+  },
+  expiresAt: {
+    type: Date // or null if infinite
   }
 });
 

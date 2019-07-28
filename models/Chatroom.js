@@ -12,6 +12,12 @@ const chatroomSchema = new mongoose.Schema({
   members: {
     type: Object
   },
+  board: {
+    type: String // board ID
+  },
+  blacklist: {
+    type: Array // of IDs (ranks, users)
+  },
   lastMessage: { // last message (the actual comment object) as well as the timestamp
     type: Object
   }

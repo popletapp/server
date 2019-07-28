@@ -26,6 +26,12 @@ const noteSchema = new mongoose.Schema({
   assignees: {
     type: Array // Array of user objects
   },
+  importance: {
+    type: Number
+  },
+  dueDate: {
+    type: Date
+  },
   options: {
     type: Object
   }
