@@ -3,21 +3,19 @@ import bodyParser from 'body-parser';
 import Redis from 'ioredis';
 import config from './config';
 import SocketServer from 'socket.io';
-import secrets from './secrets';
 import http from 'http';
 import models, { connectDb } from './models';
 import ratelimit from 'express-rate-limit';
 import { User, Board, Chatroom, Gateway, Note, Invite } from './routes';
+import imageServer from './../image-server';
+import fs from 'fs';
 
-const URL = 'http://localhost:3000';
+const URL = 'https://popletapp.com';
 const API_VER = 'v1';
 const API_URL = `/api/${API_VER}`;
 const app = express();
 const rclient = new Redis({ host: '127.0.0.1' });
-
-rclient.once('ready', function() {
-  console.log('Redis ready');
-});
+const server = http.createServer(app);
 
 // Global ratelimit - a maximum of 5 requests in 5 seconds
 const globalLimiter = ratelimit({
@@ -26,9 +24,14 @@ const globalLimiter = ratelimit({
 })
 
 app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+
+// CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Origin', URL);
+  res.setHeader('Access-Control-Allow-Origin', process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : URL);
   res.setHeader('Access-Control-Allow-Headers', 'authorization,content-type');
   next();
 });
@@ -71,12 +74,27 @@ app.use(`${API_URL}/notes`, Note)
 app.use(`${API_URL}/chatrooms`, Chatroom)
 app.use(`${API_URL}/invites`, Invite)
 
+// "web-app" must be contained inside of a parent with the server
+app.use(express.static(`${__dirname}/../web-app/build`));
+app.get('*', (req, res) => {
+  fs.readFile(`${__dirname}/../web-app/build/index.html`, (err, data) => {
+    if (data) {
+      res.writeHead(200, { 'Content-Type': "text/html" });
+      res.write(data);
+      res.end();
+    }
+  })
+})
+
+// Image server
+app.use(imageServer);
+
 app.use(function (err, req, res, next) {
   console.error(err.stack)
   res.status(500).send('Something broke!')
 })
 
-const server = http.createServer(app);
+// Initialize websockets
 const io = new SocketServer(server);
 const authorize = require('./sockets/authorize').handle;
 

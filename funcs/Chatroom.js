@@ -57,10 +57,12 @@ async function getMultiple (array) {
 async function comment (obj) {
   const comment = {
     id: generateID(),
+    chatroom: obj.chatroom,
     timestamp: Date.now(),
     author: obj.author,
     content: obj.content
   };
+  console.log(comment)
   const dbComment = new models.ChatroomComment(comment);
   await dbComment.save();
 }
@@ -69,8 +71,16 @@ async function getComment (id) {
   return await models.ChatroomComment.findOne({ id });
 }
 
-async function getComments (id) {
-  return await models.ChatroomComment.find({ chatroom: id });
+async function getComments (id, limit, position) {
+  if (limit > 100) {
+    limit = 100;
+  }
+  if (limit < 2) {
+    limit = 2;
+  }
+  const comments = await models.ChatroomComment.find({ chatroom: id });
+  console.log(comments.hasNext)
+  return comments.sort({ 'timestamp': -1 }).skip(position).limit(limit);
 }
 
 async function get (id) {

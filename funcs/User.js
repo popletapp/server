@@ -29,6 +29,10 @@ async function get (id) {
   return await models.User.findOne({ id }, { _id: 0, __v: 0, hash: 0, email: 0, boards: 0 });
 }
 
+async function getMultiple (array) {
+  return await models.User.find({ id: { $in: array } }, { _id: 0, __v: 0, hash: 0, email: 0, boards: 0 });
+}
+
 async function create (obj) {
   const usernameExists = await models.User.findOne({ username: obj.username });
   const emailExists = await models.User.findOne({ email: obj.email });
@@ -88,5 +92,6 @@ export default {
   create,
   listBoards,
   get,
+  getMultiple,
   logout
 }

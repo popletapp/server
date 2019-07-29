@@ -2,6 +2,7 @@ import models from './../models';
 import Chatroom from './Chatroom';
 import Group from './../funcs/Group.js';
 import Note from './../funcs/Note.js';
+import User from './../funcs/User.js';
 import Invite from './../funcs/Invite.js';
 import PermissionHandler from './../util/permissions';
 import { generateID } from './../util';
@@ -78,9 +79,29 @@ async function getMember (boardID, memberID, requesterID) {
 }
 
 async function getMembers (boardID, requesterID) {
+  function bubble(data) {
+    let tmp;
+    for (let i = data.length - 1; i > 0; i--) {
+        for (let j = 0; j < i; j++) {
+            if (data[j] > data[j+1]) {
+                tmp = data[j];
+                data[j] = data[j+1];
+                data[j+1] = tmp;
+            }
+        }
+    }
+    return data;
+  }
+
   const requester = models.Member.findByBoard(boardID, requesterID)
   if (requester) {
-    return await models.Member.find({ board: boardID }, { _id: 0, __v: 0 });
+    const merged = [];
+    const members = bubble(await models.Member.find({ board: boardID }, { _id: 0, __v: 0 }));
+    const users = bubble(await User.getMultiple(members.map(m => m.id)));
+    for (const i in members) {
+      merged.push(Object.assign(members[i]._doc, users[i]._doc))
+    }
+    return merged;
   } else {
     return null;
   }
