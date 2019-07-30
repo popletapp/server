@@ -2,8 +2,7 @@ import mongoose from 'mongoose';
 
 const inviteSchema = new mongoose.Schema({
   code: {
-    type: String,
-    unique: true
+    type: String
   },
   board: {
     type: String // board ID
