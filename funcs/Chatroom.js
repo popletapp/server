@@ -62,7 +62,7 @@ async function comment (obj) {
     author: obj.author,
     content: obj.content
   };
-  console.log(comment)
+
   const dbComment = new models.ChatroomComment(comment);
   await dbComment.save();
 }
@@ -79,7 +79,6 @@ async function getComments (id, limit, position) {
     limit = 2;
   }
   const comments = await models.ChatroomComment.find({ chatroom: id });
-  console.log(comments.hasNext)
   return comments.sort({ 'timestamp': -1 }).skip(position).limit(limit);
 }
 
