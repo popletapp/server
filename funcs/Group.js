@@ -53,9 +53,14 @@ async function get (id) {
   return await models.Group.findOne({ id }, { _id: 0, __v: 0 });
 }
 
+async function del (id) {
+  return await models.Group.deleteOne({ id }, { _id: 0, __v: 0 });
+}
+
 export default {
   create,
   update,
   getMultiple,
-  get
+  get,
+  del
 }
