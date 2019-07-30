@@ -97,7 +97,7 @@ async function getMembers (boardID, requesterID) {
   if (requester) {
     const merged = [];
     const members = bubble(await models.Member.find({ board: boardID }, { _id: 0, __v: 0 }));
-    const users = bubble(await User.getMultiple(members.map(m => m.id)));
+    const users = bubble(await User.getMultiple(members.map(m => m.id || null).filter(Boolean)));
     for (const i in members) {
       merged.push(Object.assign(members[i]._doc, users[i]._doc))
     }
@@ -152,12 +152,12 @@ async function adjustPermissionsOnRank (id, rank) {
 async function join (id, user) {
   const board = await models.Board.findOneAndUpdate({ id }, {
     $addToSet: {
-      'members': user.id
+      'members': user
     }
   }, { upsert: true });
 
   const member = { 
-    id: user.id,
+    id: user,
     joinedAt: Date.now(),
     nickname: null,
     board: id,
@@ -179,7 +179,7 @@ async function leave (id, user) {
     }
   });
 
-  await models.Member.deleteOne({ id: user.id, board: id });
+  await models.Member.deleteOne({ id: user, board: id });
   return board;
 }
 
