@@ -23,9 +23,9 @@ router.get(`/:id/members/:member`, authorization, (req, res, next) => {
 
 router.put(`/:id/members/:member`, authorization, async (req, res, next) => {
   if (req.body.invite) {
-    const invites = await Invite.getAll(board.id);
+    const invites = await Invite.getAll(req.params.id);
     // If invite is correct
-    if (invites.includes(req.body.invite)) {
+    if (invites.find(invite => invite.code === req.body.invite)) {
       Board.join(req.params.id, req.params.member)
           .then((board) => res.status(200).json(board))
           .catch(err => next(err));
@@ -82,7 +82,7 @@ router.patch(`/:id/groups/:note`, authorization, function (req, res, next) {
 
 router.delete(`/:id/groups/:note`, authorization, function (req, res, next) {
   if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
-    Group.delete()
+    Group.del()
         .then((note) => note ? res.status(200).json(note) : res.status(500))
         .catch(err => next(err));
   }
