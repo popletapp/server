@@ -33,7 +33,7 @@ async function create (obj) {
   
   const dbBoard = new models.Board(board);
   await dbBoard.save();
-  await join(id, obj.user);
+  await join(id, obj.user.id);
   return board;
 }
 
@@ -60,12 +60,18 @@ async function del (id) {
 
 async function getNotes (id) {
   const board = await this.get(id);
+  if (!board) {
+    return null;
+  }
   return await Note.getMultiple(board.notes)
 }
 
 async function getGroups (id) {
   const board = await this.get(id);
   // TODO: filter with only groups that are accessible by the user
+  if (!board) {
+    return null;
+  }
   return await Group.getMultiple(board.groups)
 }
 
@@ -109,12 +115,18 @@ async function getMembers (boardID, requesterID) {
 
 async function getChatrooms (id) {
   const board = await this.get(id);
+  if (!board) {
+    return null;
+  }
   return await Chatroom.getMultiple(board.chatrooms);
 }
 
 // shouldn't really need to use this, the array is in the board object but oh well
 async function getRanks (id) {
   const board = await this.get(id);
+  if (!board) {
+    return null;
+  }
   return board.ranks;
 }
 
