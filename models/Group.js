@@ -20,6 +20,12 @@ const groupSchema = new mongoose.Schema({
   items: {
     type: Array // of note IDs (or other things maybe)
   },
+  position: {
+    type: Object // x, y
+  },
+  size: {
+    type: Object // width, height
+  },
   options: {
     type: Object // other things like color, position, width/height
   }

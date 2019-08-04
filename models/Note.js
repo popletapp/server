@@ -32,6 +32,12 @@ const noteSchema = new mongoose.Schema({
   dueDate: {
     type: Date
   },
+  position: {
+    type: Object // x, y
+  },
+  size: {
+    type: Object // width, height
+  },
   options: {
     type: Object
   }
