@@ -72,18 +72,18 @@ router.put(`/:id/groups`, authorization, function (req, res, next) {
   }
 })
 
-router.patch(`/:id/groups/:note`, authorization, function (req, res, next) {
+router.patch(`/:id/groups/:group`, authorization, function (req, res, next) {
   if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
-    Group.update({ ...req.body, id: req.params.note, user: req.user })
-        .then((note) => note ? res.status(200).json(note) : res.status(500))
+    Group.update({ ...req.body, id: req.params.group, user: req.user })
+        .then((group) => group ? res.status(200).json(group) : res.status(500))
         .catch(err => next(err));
   }
 })
 
-router.delete(`/:id/groups/:note`, authorization, function (req, res, next) {
+router.delete(`/:id/groups/:group`, authorization, function (req, res, next) {
   if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
-    Group.del()
-        .then((note) => note ? res.status(200).json(note) : res.status(500))
+    Group.del(req.params.group)
+        .then((group) => group ? res.status(200).json(group) : res.status(500))
         .catch(err => next(err));
   }
 })
