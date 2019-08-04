@@ -13,6 +13,8 @@ async function create (obj) {
     modifiedBy: obj.user,
     labels: [],
     assignees: [],
+    position: obj.position || { x: 0, y: 0 },
+    size: obj.size || { width: 200, height: 100 },
     options: obj.options || {}
   };
 
@@ -45,6 +47,8 @@ async function update (obj) {
     modifiedBy: obj.user,
     labels: obj.labels || [],
     assignees: obj.assignees || [],
+    position: obj.position,
+    size: obj.size,
     options: obj.options || {}
   };
   await models.Note.updateOne({ id: obj.id }, note);

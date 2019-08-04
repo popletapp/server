@@ -14,6 +14,8 @@ async function create (obj) {
     modifiedAt: new Date().toISOString(),
     blacklist: [], // user IDs or rank IDs
     items: [],
+    position: obj.position || { x: 0, y: 0 },
+    size: obj.size || { width: 150, height: 200 },
     options: obj.options || {}
   };
 
@@ -39,6 +41,8 @@ async function update (obj) {
     modifiedAt: new Date().toISOString(),
     blacklist: obj.blacklist,
     items: obj.items,
+    position: obj.position,
+    size: obj.size,
     options: obj.options
   };
   await models.Group.updateOne({ id: obj.id }, group);

@@ -162,7 +162,7 @@ async function adjustPermissionsOnRank (id, rank) {
 }
 
 async function join (id, user) {
-  const board = await models.Board.findOneAndUpdate({ id }, {
+  await models.Board.updateOne({ id }, {
     $addToSet: {
       'members': user
     }
@@ -177,11 +177,11 @@ async function join (id, user) {
   };
   const dbBoard = new models.Member(member);
   await dbBoard.save();
-  return board;
+  return id;
 }
 
 async function leave (id, user) {
-  const board = await models.Board.findOneAndUpdate({ id: id }, {
+  await models.Board.updateOne({ id: id }, {
     $filter: {
       input: 'members',
       as: 'member',
@@ -192,7 +192,7 @@ async function leave (id, user) {
   });
 
   await models.Member.deleteOne({ id: user, board: id });
-  return board;
+  return id;
 }
 
 export default {
