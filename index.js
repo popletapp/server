@@ -10,7 +10,6 @@ import { User, Board, Chatroom, Gateway, Note, Invite } from './routes';
 import imageServer from './../image-server';
 import fs from 'fs';
 
-const URL = 'https://popletapp.com';
 const API_VER = 'v1';
 const API_URL = `/api/${API_VER}`;
 const app = express();
@@ -31,10 +30,19 @@ app.use(bodyParser.urlencoded({
 // CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Origin', process.env.NODE_ENV ? 'http://localhost:3000' : 'https://popletapp.com');
-  res.setHeader('Access-Control-Allow-Headers', 'authorization,content-type');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://popletapp.com');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Super-Properties, X-Context-Properties, X-Failed-Requests, If-None-Match');
+  res.setHeader('Access-Control-Max-Age', '86400')
   next();
 });
+
+// Other protection
+app.use((req, res, next) => {
+  res.setHeader('X-XSS-Protection', '1; mode=block')
+  next();
+})
+
 
 // Token handler + authentication
 app.use(async (req, res, next) => {
