@@ -27,7 +27,7 @@ router.put(`/:id/members/:member`, authorization, async (req, res, next) => {
     // If invite is correct
     if (invites.find(invite => invite.code === req.body.invite)) {
       Board.join(req.params.id, req.params.member)
-          .then((board) => res.status(200).json(board))
+          .then((member) => res.status(200).json(member))
           .catch(err => next(err));
     } else {
       res.status(403).json({ message: 'Invite code is invalid or expired' })

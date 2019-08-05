@@ -65,6 +65,7 @@ async function comment (obj) {
 
   const dbComment = new models.ChatroomComment(comment);
   await dbComment.save();
+  return comment;
 }
 
 async function getComment (id) {

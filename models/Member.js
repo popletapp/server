@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import User from './../funcs/User';
 
 const memberSchema = new mongoose.Schema({
   id: {
@@ -18,7 +19,10 @@ const memberSchema = new mongoose.Schema({
   }
 });
 
-memberSchema.statics.findByBoard = async function (board, id) { await this.findOne({ board, id }) };
+memberSchema.statics.findByBoard = async function (board, id) {
+  const member = await this.findOne({ board, id });
+  Object.assign(await User.get(id), member)
+};
 
 const Member = mongoose.model('Member', memberSchema);
 

@@ -177,7 +177,7 @@ async function join (id, user) {
   };
   const dbBoard = new models.Member(member);
   await dbBoard.save();
-  return id;
+  return Object.assign(await User.get(user), member);
 }
 
 async function leave (id, user) {
