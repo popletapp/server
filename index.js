@@ -16,7 +16,7 @@ const app = express();
 const rclient = new Redis({ host: '127.0.0.1' });
 const server = http.createServer(app);
 
-// Global ratelimit - a maximum of 5 requests in 5 seconds
+// Global ratelimit - a maximum of 10 requests in 5 seconds
 const globalLimiter = ratelimit({
   windowMs: 5e3,
   max: 10
@@ -26,6 +26,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({
   extended: true
 }));
+app.use(globalLimiter)
 
 // CORS
 app.use((req, res, next) => {
@@ -69,12 +70,14 @@ app.use(async (req, res, next) => {
   }
 })
 
+// Check if user is authorized to make changes
 app.use('/authorized', (req, res) => {
   res
   .status(req.user ? 200 : 403)
   .send(req.user ? `You are logged in as ${req.user.id}` : 'You are not authorized.')
 })
 
+// API endpoints
 app.use(`${API_URL}/gateway`, Gateway)
 app.use(`${API_URL}/users`, User)
 app.use(`${API_URL}/boards`, Board)
@@ -82,7 +85,12 @@ app.use(`${API_URL}/notes`, Note)
 app.use(`${API_URL}/chatrooms`, Chatroom)
 app.use(`${API_URL}/invites`, Invite)
 
-// "web-app" must be contained inside of a parent with the server
+app.get('/*', function(req, res, next) {
+  res.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
+  next(); // http://expressjs.com/guide.html#passing-route control
+});
+
+// "web-app" folder must be contained inside of a parent with the server
 app.use(express.static(`${__dirname}/../web-app/build`));
 app.get('*', (req, res) => {
   fs.readFile(`${__dirname}/../web-app/build/index.html`, (err, data) => {
@@ -99,7 +107,7 @@ app.use(imageServer);
 
 app.use(function (err, req, res, next) {
   console.error(err.stack)
-  res.status(500).send('Something broke!')
+  res.status(500).send('An internal server error has occured.')
 })
 
 // Initialize websockets
