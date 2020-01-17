@@ -22,6 +22,7 @@ async function create (obj) {
     id,
     createdAt: Date.now(),
     name: obj.name || null,
+    type: obj.type || 0,
     avatar: obj.avatar || null,
     members: [ obj.user.id ],
     notes: [],
@@ -76,7 +77,7 @@ async function getGroups (id) {
 }
 
 async function getMember (boardID, memberID, requesterID) {
-  const requester = models.Member.findByBoard(boardID, requesterID)
+  const requester = await models.Member.findByBoard(boardID, requesterID)
   if (requester) {
     return await models.Member.findByBoard(boardID, memberID);
   } else {
@@ -99,8 +100,9 @@ async function getMembers (boardID, requesterID) {
     return data;
   }
 
-  const requester = models.Member.findByBoard(boardID, requesterID)
-  if (requester) {
+  const membersByBoard = await models.Member.findByBoard(boardID, requesterID)
+  // Make sure that the requester is in the board
+  if (membersByBoard) {
     const merged = [];
     const members = bubble(await models.Member.find({ board: boardID }, { _id: 0, __v: 0 }));
     const users = bubble(await User.getMultiple(members.map(m => m.id || null).filter(Boolean)));

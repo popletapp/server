@@ -11,6 +11,9 @@ const boardSchema = new mongoose.Schema({
   name: {
     type: String,
   },
+  type: {
+    type: Number // 0 = freeplace, 1 = grid
+  },
   avatar: {
     type: String,
   },
