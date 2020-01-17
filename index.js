@@ -16,10 +16,10 @@ const app = express();
 const rclient = new Redis({ host: '127.0.0.1' });
 const server = http.createServer(app);
 
-// Global ratelimit - a maximum of 10 requests in 5 seconds
+// Global ratelimit - a maximum of 25 requests in 3 seconds
 const globalLimiter = ratelimit({
-  windowMs: 5e3,
-  max: 10
+  windowMs: 3e3,
+  max: 25
 })
 
 app.use(bodyParser.json())
@@ -85,9 +85,10 @@ app.use(`${API_URL}/notes`, Note)
 app.use(`${API_URL}/chatrooms`, Chatroom)
 app.use(`${API_URL}/invites`, Invite)
 
+// HSTS support
 app.get('/*', function(req, res, next) {
   res.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
-  next(); // http://expressjs.com/guide.html#passing-route control
+  next();
 });
 
 // "web-app" folder must be contained inside of a parent with the server

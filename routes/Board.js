@@ -6,8 +6,8 @@ import { authorization, permissions } from './../util';
 
 // Member endpoints
 router.get(`/:id/members`, authorization, (req, res, next) => {
-  if (Board.authorize(req.params.id, req.params.member)) {
-    Board.getMembers(req.params.id)
+  if (Board.authorize(req.params.id, req.user.id)) {
+    Board.getMembers(req.params.id, req.user.id)
       .then(notes => notes ? res.status(200).json(notes) : res.status(500))
       .catch(err => next(err));
   }
