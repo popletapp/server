@@ -4,7 +4,7 @@ import { authorization } from './../util';
 import { Chatroom } from './../funcs';
 
 router.get(`/:id/comments`, authorization, function (req, res, next) {
-  Chatroom.getComments(req.params.id, limit = 100, position = 0) // if 100 messages have been read, postion should be 100
+  Chatroom.getComments(req.params.id) // if 100 messages have been read, postion should be 100
         .then(comments => comments ? res.status(200).json(comments) : res.status(404))
         .catch(err => next(err));
 })

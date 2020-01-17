@@ -10,8 +10,7 @@ async function create (obj) {
     avatar: obj.avatar || null,
     board: obj.boardID || null,
     blacklist: obj.blacklist || null,
-    lastMessage: null,
-    messages: []
+    lastMessage: null
   };
 
   if (!obj.boardID) {
@@ -39,8 +38,7 @@ async function update (obj) {
     avatar: obj.avatar || null,
     board: obj.boardID || null,
     blacklist: obj.blacklist || null,
-    lastMessage: null,
-    messages: []
+    lastMessage: null
   };
   await models.Chatroom.updateOne({ id: obj.id }, chatroom);
   return chatroom;
@@ -72,19 +70,19 @@ async function getComment (id) {
   return await models.ChatroomComment.findOne({ id });
 }
 
-async function getComments (id, limit, position) {
+async function getComments (id, limit = 50, position) {
   if (limit > 100) {
     limit = 100;
   }
   if (limit < 2) {
     limit = 2;
   }
-  const comments = await models.ChatroomComment.find({ chatroom: id });
-  return comments.sort({ 'timestamp': -1 }).skip(position).limit(limit);
+  return await models.ChatroomComment.find({ chatroom: id }).sort({ 'timestamp': -1 }).skip(position).limit(limit);
 }
 
 async function get (id) {
-  return await models.Chatroom.findOne({ id });
+  const chatroom = Object.assign({}, await models.Chatroom.findOne({ id }), { comments: await getComments(id) });
+  return chatroom;
 }
 
 export default {
