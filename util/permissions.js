@@ -22,7 +22,8 @@ class PermissionsHandler {
 
   get () {
     let bitfield = 0;
-
+    console.log(this.member)
+    console.log(this.member.ranks)
     for (const rank of this.member.ranks) {
       bitfield |= rank.permissions;
     }
@@ -47,7 +48,7 @@ class PermissionsHandler {
   }
   
   has (permission) {
-    const all = get();
+    const all = this.get();
     return all[permission];
   }
 }
