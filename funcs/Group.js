@@ -10,6 +10,7 @@ async function create (obj) {
   const group = {
     id,
     name: obj.name || null,
+    type: 0,
     createdAt: new Date().toISOString(),
     modifiedAt: new Date().toISOString(),
     blacklist: [], // user IDs or rank IDs
@@ -37,6 +38,7 @@ async function update (obj) {
   const group = {
     id: obj.id,
     name: obj.name || null,
+    type: obj.type || 0,
     createdAt: new Date().toISOString(),
     modifiedAt: new Date().toISOString(),
     blacklist: obj.blacklist,

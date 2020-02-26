@@ -14,6 +14,9 @@ const groupSchema = new mongoose.Schema({
   name: {
     type: String,
   },
+  type: {
+    type: Number
+  },
   blacklist: {
     type: Array // of member IDs
   },
