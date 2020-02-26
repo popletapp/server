@@ -18,8 +18,8 @@ const server = http.createServer(app);
 
 // Global ratelimit - a maximum of 25 requests in 3 seconds
 const globalLimiter = ratelimit({
-  windowMs: 3e3,
-  max: 25
+  windowMs: 1e3,
+  max: 50
 })
 
 app.use(bodyParser.json())
