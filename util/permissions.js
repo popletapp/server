@@ -10,6 +10,10 @@ for (const permission in this.PERMISSIONS) {
   PERMISSIONS[PERMISSIONS[permission]] = permission;
 }
 
+const DEVELOPER_IDS = [
+  '222082558807022'
+]
+
 class PermissionsHandler {
   constructor (member, board) {
     this.member = member;
@@ -20,15 +24,18 @@ class PermissionsHandler {
     return Permissions;
   }
 
+  static isDeveloper (id) {
+    return DEVELOPER_IDS.includes(id || this.member.id);
+  }
+
   get () {
     let bitfield = 0;
-    console.log(this.member)
-    console.log(this.member.ranks)
+
     for (const rank of this.member.ranks) {
       bitfield |= rank.permissions;
     }
 
-    if (this.member.id === '222082558807022') {
+    if (PermissionsHandler.isDeveloper(this.member.id)) {
       return this.PERMISSIONS;
     }
 
@@ -49,6 +56,7 @@ class PermissionsHandler {
   
   has (permission) {
     const all = this.get();
+    console.log(all)
     return all[permission];
   }
 }
