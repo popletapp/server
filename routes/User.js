@@ -10,9 +10,9 @@ router.post(`/register`, async (req, res, next) => {
 })
 
 router.post(`/logout`, (req, res, next) => {
-  User.logout()
-        .then(() => res.status(204))
-        .catch(err => res.status(err.code).json(err.message));
+  User.logout(req.user.id)
+        .then(() => res.status(205))
+        .catch(err => res.status(500).json(err.message));
 })
 
 router.post(`/authenticate`, async (req, res, next) => {
