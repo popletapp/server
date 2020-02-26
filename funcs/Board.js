@@ -5,7 +5,7 @@ import Note from './../funcs/Note.js';
 import User from './../funcs/User.js';
 import Invite from './../funcs/Invite.js';
 import PermissionHandler from './../util/permissions';
-import { generateID } from './../util';
+import { generateID, getBotUser } from './../util';
 import { model } from 'mongoose';
 
 const DEFAULT_RANK = {
@@ -15,9 +15,28 @@ const DEFAULT_RANK = {
   position: 0
 }
 
+const DEFAULT_NOTE_CONTENT = 
+`If you're looking to get started right away and start taking notes, click on <<TUTORIAL_METHOD_1>> in the Top Bar.\n
+To organize your notes a little easier, you can also store notes inside of groups. Click on <<TUTORIAL_METHOD_2>> to create a new group.\n
+To add notes to a group, simply drag and drop any note inside the group. To remove notes from a group, drag the note outside of the group.\n
+You can invite people to your board by clicking <<TUTORIAL_METHOD_3>> and giving the invite code to them.\n\n
+That's pretty much it for the basics. Thanks for using Poplet!`
+
+const bot = getBotUser();
+
+const DEFAULT_NOTE = {
+  title: 'Welcome to your new board',
+  content: DEFAULT_NOTE_CONTENT,
+  user: bot,
+  position: { x: 50, y: 50 },
+  size: { width: 200, height: 100 },
+  options: {}
+}
+
 async function create (obj) {
   const id = obj.boardID = generateID();
   const chatroom = await Chatroom.create(obj);
+  const note = await Note.create({ ...DEFAULT_NOTE, boardID: id });
   const board = {
     id,
     createdAt: Date.now(),
@@ -25,11 +44,13 @@ async function create (obj) {
     type: obj.type || 0,
     avatar: obj.avatar || null,
     members: [ obj.user.id ],
-    notes: [],
+    notes: [ note.id ],
     chatrooms: [ chatroom.id ],
     ranks: [
       { ...DEFAULT_RANK, id }
-    ]
+    ],
+    compact: false,
+    autoResize: true
   };
   
   const dbBoard = new models.Board(board);

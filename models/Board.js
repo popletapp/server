@@ -38,6 +38,12 @@ const boardSchema = new mongoose.Schema({
   },
   chatrooms: {
     type: Array
+  },
+  compact: {
+    type: Boolean
+  },
+  autoResize: { // whether or not notes/groups should automatically resize to comfortably take up space or if the user needs to manually resize components
+    type: Boolean
   }
 });
 
