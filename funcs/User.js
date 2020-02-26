@@ -83,8 +83,9 @@ async function listBoards (id) {
   }
 }
 
-async function logout () {
-  await models.Token.deleteOne({ userId: user.id });
+async function logout (id) {
+  await models.Token.deleteOne({ userId: id });
+  return true;
 }
 
 export default {
