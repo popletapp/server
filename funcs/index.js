@@ -4,3 +4,4 @@ export { default as Note } from './Note';
 export { default as Chatroom } from './Chatroom';
 export { default as Invite } from './Invite';
 export { default as Group } from './Group';
+export { default as Blog } from './Blog';
