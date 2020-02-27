@@ -39,7 +39,7 @@ const noteSchema = new mongoose.Schema({
     type: Object // width, height
   },
   options: {
-    type: Object
+    type: Object // compact, autoResize
   }
 });
 

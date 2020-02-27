@@ -1,5 +1,6 @@
 import models from './../models';
 import { generateID } from '../util';
+import { Board } from './';
 
 async function create (obj) {
   const id = generateID();
@@ -36,23 +37,46 @@ async function create (obj) {
   return note;
 }
 
-async function update (obj) {
-  const note = {
-    id: obj.id,
-    title: obj.title || null,
-    content: obj.content || null,
-    createdAt: obj.createdAt,
-    createdBy: obj.createdBy,
-    modifiedAt: new Date().toISOString(),
-    modifiedBy: obj.user,
-    labels: obj.labels || [],
-    assignees: obj.assignees || [],
+function deepEqual (x, y) {
+  const ok = Object.keys, tx = typeof x, ty = typeof y;
+  return x && y && tx === 'object' && tx === ty ? (
+    ok(x).length === ok(y).length &&
+      ok(x).every(key => key === 'position' ? true : (deepEqual(x[key], y[key]))
+  )) : (x === y);
+}
+
+async function update (obj, boardID) {
+  const oldNote = this.get(obj.id);
+  if (!oldNote) return null;
+  const comparisonNote = {
+    ...oldNote,
+    title: obj.title,
+    content: obj.content,
+    labels: obj.labels,
+    assignees: obj.assignees,
     position: obj.position,
     size: obj.size,
-    options: obj.options || {}
+    options: obj.options
   };
-  await models.Note.updateOne({ id: obj.id }, note);
-  return note;
+  const newNote = {
+    ...oldNote,
+    ...comparisonNote,
+    modifiedAt: new Date().toISOString(),
+    modifiedBy: obj.user,
+  };
+
+  const ELIGIBLE_PERMISSIONS = ['MANAGE_NOTES'];
+  // Only allow people with MOVE_NOTES to move the note if note is the same except position change
+  if (deepEqual(oldNote, comparisonNote)) {
+    ELIGIBLE_PERMISSIONS.push('MOVE_NOTES');
+  }
+  const authorized = await Board.authorize(boardID, obj.user.id, ELIGIBLE_PERMISSIONS);
+  if (authorized) {
+    await models.Note.updateOne({ id: obj.id }, newNote);
+    return newNote;
+  } else {
+    return null;
+  }
 }
 
 async function del (id) {
