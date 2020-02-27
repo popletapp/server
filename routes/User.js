@@ -22,7 +22,6 @@ router.post(`/authenticate`, async (req, res, next) => {
 })
 
 router.get(`/me/boards`, authorization, (req, res, next) => {
-  console.log(`${req.user.id} is requesting a list of all boards`)
   User.listBoards(req.user.id)
         .then(user => user ? res.json(user) : res.status(403))
         .catch(err => next(err));
@@ -35,7 +34,6 @@ router.get(`/me`, authorization, async (req, res, next) => {
 })
 
 router.get(`/:id/boards`, authorization, (req, res, next) => {
-  console.log(`${req.params.id} is requesting a list of all boards`)
   User.listBoards(req.params.id)
         .then(user => user ? res.json(user) : res.status(403))
         .catch(err => next(err));

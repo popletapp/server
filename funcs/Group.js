@@ -39,7 +39,6 @@ async function update (obj) {
     id: obj.id,
     name: obj.name || null,
     type: obj.type || 0,
-    createdAt: new Date().toISOString(),
     modifiedAt: new Date().toISOString(),
     blacklist: obj.blacklist,
     items: obj.items,

@@ -45,7 +45,8 @@ async function del (id) {
 }
 
 async function getMultiple (limit = 10) {
-  return await models.BlogPost.find(null, { _id: 0, __v: 0 }).limit(limit).sort({ timestamp: -1 });
+  const posts = await models.BlogPost.find(null, { _id: 0, __v: 0 }).limit(limit).sort({ timestamp: -1 });
+  return posts;
 }
 
 async function get (id) {
