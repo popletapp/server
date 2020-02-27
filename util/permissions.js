@@ -1,13 +1,21 @@
 
 const Permissions = {
-  0: 'USER',
-  8: 'ADMINISTRATOR', // Board Owner
-  16: 'MODERATOR',
-  32: 'EDITOR'
+  1: 'MANAGE_NOTES',
+  2: 'MANAGE_MEMBERS',
+  4: 'MOVE_NOTES',
+  8: 'MODERATOR',
+  16: 'ADMINISTRATOR',
+  32: 'VIEW_CHATROOMS',
+  64: 'ADD_COMMENTS',
+  128: 'SEND_CHATROOM_MESSAGES',
+  256: 'INVITE_MEMBERS',
+  512: 'KICK_MEMBERS',
+  1024: 'BAN_MEMBERS',
+  2048: 'MANAGE_BOARD'
 }
 // Make it so all permissions are accessible by their bitfield and name
-for (const permission in this.PERMISSIONS) {
-  PERMISSIONS[PERMISSIONS[permission]] = permission;
+for (const permission in Permissions) {
+  Permissions[Permissions[permission]] = permission;
 }
 
 const DEVELOPER_IDS = [
@@ -31,7 +39,9 @@ class PermissionsHandler {
   get () {
     let bitfield = 0;
 
-    for (const rank of this.member.ranks) {
+    for (let rank of this.member.ranks) {
+      rank = this.board.ranks.find(r => r.id === rank);
+      if (!rank) continue; 
       bitfield |= rank.permissions;
     }
 
@@ -39,24 +49,37 @@ class PermissionsHandler {
       return this.PERMISSIONS;
     }
 
-    if (this.board.owner === this.member.id) {
+    if ((this.board.owner || this.board.members[0]) === this.member.id) {
       return this.PERMISSIONS;
     }
 
-    if (bitfield & this.PERMISSIONS.ADMINISTRATOR === this.PERMISSIONS.ADMINISTRATOR) {
+    if (bitfield & this.PERMISSIONS.ADMINISTRATOR) {
       return this.PERMISSIONS;
     }
 
     const has = {};
     for (const permission in this.PERMISSIONS) {
-      has[permission] = has[this.PERMISSIONS[permission]] = (bitfield & permission) === bitfield;
+      has[permission] = !!(bitfield & permission);
+    }
+    // Make it so all permissions are accessible by their bitfield and name
+    for (const permission in has) {
+      has[this.PERMISSIONS[permission]] = has[permission];
     }
     return has;
   }
   
   has (permission) {
     const all = this.get();
-    console.log(all)
+    if (Array.isArray(permission)) {
+      let obj = {};
+      for (const perm of permission) {
+        obj = all[perm];
+      }
+      return obj;
+    }
+    if (all[permission] === undefined) {
+      return null; // permission doesn't exist
+    }
     return all[permission];
   }
 }
