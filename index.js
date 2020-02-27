@@ -6,7 +6,7 @@ import SocketServer from 'socket.io';
 import http from 'http';
 import models, { connectDb } from './models';
 import ratelimit from 'express-rate-limit';
-import { User, Board, Chatroom, Gateway, Note, Invite } from './routes';
+import { User, Board, Chatroom, Gateway, Note, Invite, Blog } from './routes';
 import imageServer from './../image-server';
 import fs from 'fs';
 
@@ -84,6 +84,7 @@ app.use(`${API_URL}/boards`, Board)
 app.use(`${API_URL}/notes`, Note)
 app.use(`${API_URL}/chatrooms`, Chatroom)
 app.use(`${API_URL}/invites`, Invite)
+app.use(`${API_URL}/blog`, Blog)
 
 // HSTS support
 app.get('/*', function(req, res, next) {
