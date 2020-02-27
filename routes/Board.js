@@ -37,8 +37,16 @@ router.put(`/:id/members/:member`, authorization, async (req, res, next) => {
   }
 })
 
+router.patch(`/:id/members/:member`, authorization, (req, res, next) => {
+  if (Board.authorize(req.params.id, req.params.member, req.params.member === req.user.id ? 'USER' : 'MANAGE_MEMBERS')) {
+    Board.editMember(req.params.id, req.params.member, req.body, req.user.id)
+        .then((member) => member ? res.status(200).json(member) : res.status(403))
+        .catch(err => next(err));
+  }
+})
+
 router.delete(`/:id/members/:member`, authorization, (req, res, next) => {
-  if (Board.authorize(req.params.id, req.params.member, req.params.member === req.user.id ? 'USER' : 'MODERATOR')) {
+  if (Board.authorize(req.params.id, req.params.member, req.params.member === req.user.id ? 'USER' : ['BAN_MEMBERS', 'KICK_MEMBERS', 'MODERATOR'])) {
     Board.leave(req.params.id, req.params.member)
         .then((board) => res.status(200).json(board))
         .catch(err => next(err));
@@ -47,7 +55,7 @@ router.delete(`/:id/members/:member`, authorization, (req, res, next) => {
 
 // Chatrooms
 router.get(`/:id/chatrooms`, authorization, (req, res, next) => {
-  if (Board.authorize(req.params.id, req.user.id)) {
+  if (Board.authorize(req.params.id, req.user.id, 'VIEW_CHATROOMS')) {
     Board.getChatrooms(req.params.id)
         .then(chatrooms => chatrooms ? res.status(200).json(chatrooms) : res.status(500))
         .catch(err => next(err));
@@ -65,7 +73,7 @@ router.get(`/:id/groups`, authorization, (req, res, next) => {
 })
 
 router.put(`/:id/groups`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_NOTES')) {
     Group.create({ ...req.body, user: req.user })
         .then((note) => res.status(200).json(note))
         .catch(err => next(err));
@@ -73,7 +81,7 @@ router.put(`/:id/groups`, authorization, function (req, res, next) {
 })
 
 router.patch(`/:id/groups/:group`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_NOTES')) {
     Group.update({ ...req.body, id: req.params.group, user: req.user })
         .then((group) => group ? res.status(200).json(group) : res.status(500))
         .catch(err => next(err));
@@ -81,7 +89,7 @@ router.patch(`/:id/groups/:group`, authorization, function (req, res, next) {
 })
 
 router.delete(`/:id/groups/:group`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_NOTES')) {
     Group.del(req.params.group)
         .then((group) => group ? res.status(200).json(group) : res.status(500))
         .catch(err => next(err));
@@ -99,7 +107,7 @@ router.get(`/:id/ranks`, authorization, (req, res, next) => {
 })
 
 router.put(`/:id/ranks`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_BOARD')) {
     Board.addRank(req.params.id, req.body.rank)
         .then((rank) => res.status(200).json(rank))
         .catch(err => next(err));
@@ -107,16 +115,16 @@ router.put(`/:id/ranks`, authorization, function (req, res, next) {
 })
 
 router.patch(`/:id/ranks/:rank`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
-    Board.adjustPermissionsOnRank(req.params.id, { id: req.params.rank, ...req.body.rank })
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_BOARD')) {
+    Board.updateRank(req.params.id, { id: req.params.rank, ...req.body })
         .then((rank) => rank ? res.status(200).json(rank) : res.status(500))
         .catch(err => next(err));
   }
 })
 
 router.delete(`/:id/ranks/:rank`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
-    Board.removeRank(req.params.id, { id: req.params.rank, ...req.body.rank })
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_BOARD')) {
+    Board.removeRank(req.params.id, { id: req.params.rank, ...req.body })
         .then(() => res.status(204))
         .catch(err => next(err));
   }
@@ -133,7 +141,7 @@ router.get(`/:id/notes`, authorization, (req, res, next) => {
 })
 
 router.put(`/:id/notes`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_NOTES')) {
     Note.create({ ...req.body, user: req.user })
         .then((note) => res.status(200).json(note))
         .catch(err => next(err));
@@ -141,15 +149,13 @@ router.put(`/:id/notes`, authorization, function (req, res, next) {
 })
 
 router.patch(`/:id/notes/:note`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
-    Note.update({ ...req.body, id: req.params.note, user: req.user })
-        .then((note) => note ? res.status(200).json(note) : res.status(500))
-        .catch(err => next(err));
-  }
+  Note.update({ ...req.body, id: req.params.note, user: req.user }, req.params.id)
+      .then((note) => note ? res.status(200).json(note) : res.status(500))
+      .catch(err => next(err));
 })
 
 router.delete(`/:id/notes/:note`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'EDITOR')) {
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_NOTES')) {
     Note.del(req.params.note)
         .then((note) => note ? res.status(200).json(note) : res.status(500))
         .catch(err => next(err));
@@ -158,7 +164,7 @@ router.delete(`/:id/notes/:note`, authorization, function (req, res, next) {
 
 // Invite endpoints
 router.get(`/:id/invites`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'MODERATOR')) {
+  if (Board.authorize(req.params.id, req.user.id, 'INVITE_MEMBERS')) {
     Invite.getAll(req.params.id)
         .then((invite) => res.status(200).json(invite))
         .catch(err => next(err));
@@ -166,11 +172,9 @@ router.get(`/:id/invites`, authorization, function (req, res, next) {
 })
 
 router.get(`/:id/invites/:invite`, authorization, function (req, res, next) {
-  if (Board.authorize(req.params.id, req.user.id, 'USER')) {
-    Invite.get(req.params.invite)
-        .then((invite) => res.status(200).json(invite))
-        .catch(err => next(err));
-  }
+  Invite.get(req.params.invite)
+      .then((invite) => res.status(200).json(invite))
+      .catch(err => next(err));
 })
 
 router.post(`/:id/invites`, authorization, function (req, res, next) {
@@ -184,7 +188,7 @@ router.post(`/:id/invites`, authorization, function (req, res, next) {
 // Board endpoints
 router.patch(`/:id`, authorization, (req, res, next) => {
   if (Board.authorize(req.params.id, req.user.id, 'ADMINISTRATOR')) {
-    Board.edit(req.params.id)
+    Board.edit(req.params.id, req.body)
         .then(board => board ? res.status(200).json(board) : res.status(404))
         .catch(err => next(err));
   }
@@ -199,7 +203,7 @@ router.delete(`/:id`, authorization, (req, res, next) => {
 })
 
 router.get(`/:id`, authorization, (req, res, next) => {
-  if (Board.authorize(req.params.id, req.user.id, 'USER')) {
+  if (Board.authorize(req.params.id, req.user.id)) {
     Board.get(req.params.id)
           .then(board => board ? res.status(200).json(board) : res.status(404))
           .catch(err => next(err));
