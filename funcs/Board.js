@@ -5,7 +5,7 @@ import Note from './../funcs/Note.js';
 import User from './../funcs/User.js';
 import Invite from './../funcs/Invite.js';
 import PermissionHandler from './../util/permissions';
-import { generateID, getBotUser } from './../util';
+import { generateID, getBotUser, permissions } from './../util';
 import { model } from 'mongoose';
 
 const DEFAULT_RANK = {
@@ -49,6 +49,7 @@ async function create (obj) {
     ranks: [
       { ...DEFAULT_RANK, id }
     ],
+    owner: obj.user.id,
     compact: false,
     autoResize: true
   };
@@ -63,7 +64,10 @@ async function authorize (boardID, requesterID, permissionRequired = 'USER') {
   const requester = await models.Member.findByBoard(boardID, requesterID);
   const board = await this.get(boardID);
   if (!requester) {
-    return null;
+    return false;
+  }
+  if (permissionRequired === 'USER') {
+    return true;
   }
   return new PermissionHandler(requester, board).has(permissionRequired);
 }
@@ -72,8 +76,21 @@ async function get (id) {
   return await models.Board.findOne({ id }, { _id: 0, __v: 0 });
 }
 
-async function edit (property, value) {
-  return await models.Board.updateOne({ id: obj.id }, { [property]: value }, { upsert: true });
+async function edit (id, obj) {
+  const original = await this.get(id);
+  const board = {
+    name: obj.name,
+    type: obj.type,
+    avatar: obj.avatar,
+    ranks: obj.ranks,
+    chatrooms: obj.chatrooms,
+    compact: obj.compact,
+    autoResize: obj.autoResize,
+    owner: obj.owner
+  };
+  const newBoard = Object.assign(original, board);
+  await models.Board.updateOne({ id }, newBoard);
+  return newBoard;
 }
 
 async function del (id) {
@@ -154,7 +171,10 @@ async function getRanks (id) {
 }
 
 async function addRank (id, rank) {
-  rank = { ...DEFAULT_RANK, ...rank, id: generateID() };
+  const board = await this.get(id);
+  const lastPosition = board.ranks.sort((a, b) => b.position - a.position)[0].position + 1;
+
+  rank = { ...DEFAULT_RANK, ...rank, id: generateID(), position: lastPosition };
   await models.Board.updateOne({ id }, {
     $addToSet: {
       'ranks': rank
@@ -175,13 +195,53 @@ async function removeRank (id, rank) {
   return rank;
 }
 
-async function adjustPermissionsOnRank (id, rank) {
-  rank.permissions = rank.permissions || 0;
-  await models.Board.updateOne({ id, 'ranks.id': rank.id }, {
+async function updateRank (id, rank) {
+  const board = await this.get(id);
+  const oldRankIndex = board.ranks.findIndex(r => r.id === rank.id);
+  const oldRank = board.ranks[oldRankIndex];
+  const newRank = {
+    ...oldRank,
+    name: rank.name,
+    color: rank.color,
+    permissions: rank.permissions,
+    position: rank.position
+  }
+  await models.Board.updateOne({ id }, {
     $set: {
-      'ranks.$.permissions': rank.permissions
+      [`ranks.${oldRankIndex}`]: newRank
     }
   }, { upsert: true });
+  return newRank;
+}
+
+async function applyRankToUser (id, user, rank) {
+  await models.Member.updateOne({ id: user, board: id }, {
+    $addToSet: {
+      'ranks': rank
+    }
+  }, { upsert: true });
+  return rank;
+}
+
+async function removeRankFromUser (id, user, rank) {
+  await models.Member.updateOne({ id: user, board: id }, {
+    $pull: {
+      'ranks': { $in: rank }
+    },
+  }, { upsert: true });
+  return rank;
+}
+
+async function editMember (id, memberID, memberObj, requesterID) {
+  const oldMember = this.getMember(id, memberID, requesterID)
+  if (!oldMember) return false;
+  const newMember = {
+    ...oldMember,
+    nickname: memberObj.nickname,
+    ranks: memberObj.ranks,
+  }
+  await models.Member.updateOne({ id: memberID, board: id }, newMember, { upsert: true });
+  return newMember;
 }
 
 async function join (id, user) {
@@ -196,7 +256,7 @@ async function join (id, user) {
     joinedAt: Date.now(),
     nickname: null,
     board: id,
-    ranks: []
+    ranks: [ id ]
   };
   const dbBoard = new models.Member(member);
   await dbBoard.save();
@@ -234,5 +294,8 @@ export default {
   getRanks,
   addRank,
   removeRank,
-  adjustPermissionsOnRank
+  updateRank,
+  applyRankToUser,
+  removeRankFromUser,
+  editMember
 }
