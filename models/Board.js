@@ -30,6 +30,9 @@ const boardSchema = new mongoose.Schema({
     type: Array // of rank *objects*
     // The default rank will have the same ID as the board ID
   },
+  labels: {
+    type: Array // of label objects
+  },
   whitelist: {
     type: Array // of user IDs or null if no whitelist
   },

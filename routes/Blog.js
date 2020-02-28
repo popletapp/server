@@ -18,7 +18,7 @@ router.get(`/posts`, (req, res, next) => {
 })
 
 router.get(`/post/:id`, (req, res, next) => {
-  Blog.get(req.params.id, req.user.id)
+  Blog.get(req.params.id)
     .then(posts => posts ? res.status(200).json(posts) : res.status(500))
     .catch(err => next(err));
 })
