@@ -131,6 +131,32 @@ router.delete(`/:id/ranks/:rank`, authorization, function (req, res, next) {
 })
 
 
+// Label endpoints
+router.put(`/:id/labels`, authorization, function (req, res, next) {
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_BOARD')) {
+    Board.addLabel(req.params.id, req.body)
+        .then((label) => res.status(200).json(label))
+        .catch(err => next(err));
+  }
+})
+
+router.patch(`/:id/labels/:label`, authorization, function (req, res, next) {
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_BOARD')) {
+    Board.updateLabel(req.params.id, { id: req.params.label, ...req.body })
+        .then((label) => label ? res.status(200).json(label) : res.status(500))
+        .catch(err => next(err));
+  }
+})
+
+router.delete(`/:id/labels/:label`, authorization, function (req, res, next) {
+  if (Board.authorize(req.params.id, req.user.id, 'MANAGE_BOARD')) {
+    Board.removeLabel(req.params.id, { id: req.params.label, ...req.body })
+        .then(() => res.status(204))
+        .catch(err => next(err));
+  }
+})
+
+
 // Note endpoints
 router.get(`/:id/notes`, authorization, (req, res, next) => {
   if (Board.authorize(req.params.id, req.user.id)) {
