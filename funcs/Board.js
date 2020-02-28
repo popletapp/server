@@ -15,6 +15,12 @@ const DEFAULT_RANK = {
   position: 0
 }
 
+const DEFAULT_LABEL = {
+  name: 'Label',
+  color: null, // hex
+  position: 0
+}
+
 const DEFAULT_NOTE_CONTENT = 
 `If you're looking to get started right away and start taking notes, click on <<TUTORIAL_METHOD_1>> in the Top Bar.\n
 To organize your notes a little easier, you can also store notes inside of groups. Click on <<TUTORIAL_METHOD_2>> to create a new group.\n
@@ -50,6 +56,7 @@ async function create (obj) {
       { ...DEFAULT_RANK, id }
     ],
     owner: obj.user.id,
+    labels: [],
     compact: false,
     autoResize: true
   };
@@ -85,6 +92,7 @@ async function edit (id, obj) {
     ranks: obj.ranks,
     chatrooms: obj.chatrooms,
     compact: obj.compact,
+    labels: obj.labels,
     autoResize: obj.autoResize,
     owner: obj.owner
   };
@@ -180,7 +188,7 @@ async function addRank (id, rank) {
       'ranks': rank
     }
   }, { upsert: true });
-  return rank
+  return rank;
 }
 
 async function removeRank (id, rank) {
@@ -230,6 +238,49 @@ async function removeRankFromUser (id, user, rank) {
     },
   }, { upsert: true });
   return rank;
+}
+
+async function addLabel (id, label) {
+  const board = await this.get(id);
+  const lastPosition = (board.labels || []).length ? board.labels.sort((a, b) => b.position - a.position)[0].position + 1 : 0;
+
+  label = { ...DEFAULT_LABEL, ...label, id: generateID(), position: lastPosition };
+  await models.Board.updateOne({ id }, {
+    $addToSet: {
+      'labels': label
+    }
+  }, { upsert: true });
+  return label;
+}
+
+async function removeLabel (id, label) {
+  await models.Board.updateOne({ id, ranks: { $elemMatch: { 'id': label.id, 'position': { $gte: label.position } } } }, {
+    $pull: {
+      'labels': { $in: label }
+    },
+    $inc: {
+      'labels.$': { position: -1 }
+    }
+  }, { upsert: true });
+  return label;
+}
+
+async function updateLabel (id, rank) {
+  const board = await this.get(id);
+  const oldLabelIndex = board.labels.findIndex(r => r.id === labels.id);
+  const oldLabel = board.labels[oldLabelIndex];
+  const newLabel = {
+    ...oldLabel,
+    name: label.name,
+    color: label.color,
+    position: label.position
+  }
+  await models.Board.updateOne({ id }, {
+    $set: {
+      [`ranks.${oldLabelIndex}`]: newLabel
+    }
+  }, { upsert: true });
+  return newLabel;
 }
 
 async function editMember (id, memberID, memberObj, requesterID) {
@@ -297,5 +348,8 @@ export default {
   updateRank,
   applyRankToUser,
   removeRankFromUser,
-  editMember
+  editMember,
+  addLabel,
+  updateLabel,
+  removeLabel
 }
