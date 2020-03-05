@@ -1,19 +1,31 @@
 import models from './../models';
 import { generateID } from '../util';
 import { Board } from './';
+import ActionLog from './../funcs/ActionLog.js';
+import ActionTypes from './../constants/ActionTypes';
 
-async function create (obj) {
+async function create (boardID, obj, requesterID) {
+  if (!boardID) {
+    throw new Error('Board ID is invalid');
+  }
+  const board = await Board.get(boardID);
+  if (!board) {
+    throw new Error('Couldn\'t find a board under that board ID, make sure the board exists and is valid');
+  }
+  const ref = board.notes.length ? (board.notes.map(n => n.reference).sort((a, b) => b - a)[0] || 0) + 1 : 1;
   const id = generateID();
   const note = {
     id,
+    ref,
     title: obj.title || null,
     content: obj.content || null,
-    createdAt: new Date().toISOString(),
+    createdAt: Date.now(),
     createdBy: obj.user,
-    modifiedAt: new Date().toISOString(),
+    modifiedAt: Date.now(),
     modifiedBy: obj.user,
     labels: [],
     assignees: [],
+    dueDate: null,
     position: obj.position || { x: 0, y: 0 },
     size: obj.size || { width: 200, height: 100 },
     options: obj.options || {}
@@ -21,18 +33,23 @@ async function create (obj) {
 
   const dbNote = new models.Note(note);
   await dbNote.save();
-
-  if (!obj.boardID) {
-    throw new Error('A board ID needs to be provided in the request body');
-  }
+  
   try {
-    await models.Board.updateOne({ id: obj.boardID }, {
+    await models.Board.updateOne({ id: boardID }, {
       $push: {
         notes: id
       }
+    }).then(() => {
+      ActionLog.create({
+        boardID,
+        type: ActionTypes.CREATE_NOTE,
+        executor: requesterID,
+        before: null,
+        after: note
+      });
     });
   } catch (e) {
-    throw new Error('Error whilst trying to apply note to board, make sure the board exists and is valid.');
+    throw new Error('Error whilst trying to apply note to board, make sure the board exists and is valid');
   }
   return note;
 }
@@ -45,42 +62,58 @@ function deepEqual (x, y) {
   )) : (x === y);
 }
 
-async function update (obj, boardID) {
-  const oldNote = this.get(obj.id);
-  if (!oldNote) return null;
-  const comparisonNote = {
-    ...oldNote,
-    title: obj.title,
-    content: obj.content,
-    labels: obj.labels,
-    assignees: obj.assignees,
-    position: obj.position,
-    size: obj.size,
-    options: obj.options
-  };
-  const newNote = {
-    ...oldNote,
-    ...comparisonNote,
-    modifiedAt: new Date().toISOString(),
-    modifiedBy: obj.user,
-  };
-
-  const ELIGIBLE_PERMISSIONS = ['MANAGE_NOTES'];
-  // Only allow people with MOVE_NOTES to move the note if note is the same except position change
-  if (deepEqual(oldNote, comparisonNote)) {
-    ELIGIBLE_PERMISSIONS.push('MOVE_NOTES');
-  }
-  const authorized = await Board.authorize(boardID, obj.user.id, ELIGIBLE_PERMISSIONS);
-  if (authorized) {
-    await models.Note.updateOne({ id: obj.id }, newNote);
-    return newNote;
-  } else {
-    return null;
-  }
+async function update (boardID, obj, requesterID) {
+  return await this.get(obj.id).then(async (oldNote) => {
+    if (!oldNote) return null;
+    const newNote = {
+      ...oldNote._doc,
+      title: obj.title,
+      content: obj.content,
+      labels: obj.labels,
+      assignees: obj.assignees,
+      position: obj.position,
+      size: obj.size,
+      dueDate: obj.dueDate,
+      options: obj.options,
+      modifiedAt: Date.now(),
+      modifiedBy: obj.user,
+      options: obj.options
+    };
+    const ELIGIBLE_PERMISSIONS = ['MANAGE_NOTES'];
+    // Only allow people with MOVE_NOTES to move the note if note is the same except position change
+    if (deepEqual(oldNote, newNote)) {
+      ELIGIBLE_PERMISSIONS.push('MOVE_NOTES');
+    }
+    const authorized = await Board.authorize(boardID, obj.user.id, ELIGIBLE_PERMISSIONS);
+    if (authorized) {
+      // Would love to .then this but mongo has an internal cache 😔
+      await ActionLog.create({
+        boardID,
+        type: ActionTypes.UPDATE_NOTE,
+        executor: requesterID,
+        before: oldNote,
+        after: newNote
+      });
+      await models.Note.updateOne({ id: obj.id }, newNote);
+      return newNote;
+    } else {
+      return null;
+    }
+  })
 }
 
-async function del (id) {
-  return await models.Note.deleteOne({ id });
+async function del (boardID, id, requesterID) {
+  const note = await this.get(id);
+  await models.Note.deleteOne({ id }).then(() => {
+    ActionLog.create({
+      boardID,
+      type: ActionTypes.CREATE_NOTE,
+      executor: requesterID,
+      before: note,
+      after: null
+    });
+  });
+  return true;
 }
 
 async function getMultiple (array) {
