@@ -5,7 +5,7 @@ import { Note } from './../funcs';
 
 
 
-router.post(`/:id`, authorization, function (req, res, next) {
+router.get(`/:id`, authorization, function (req, res, next) {
   if (req.params.id === 'multiple') {
     Note.getMultiple(req.body.ids)
         .then(notes => notes ? res.json(notes) : res.status(404))

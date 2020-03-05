@@ -5,6 +5,10 @@ const noteSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
+  ref: {
+    type: Number,
+    unique: true
+  },
   createdAt: {
     type: Date
   },

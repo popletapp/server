@@ -22,6 +22,17 @@ const userSchema = new mongoose.Schema({
   hash: {
     type: String,
     required: true
+  },
+  settings: {
+    type: Object, // { theme: 0, compact: Boolean }
+    required: true
+  },
+  bot: {
+    type: Boolean
+  },
+  badges: {
+    type: Number,
+    required: true
   }
 });
 
