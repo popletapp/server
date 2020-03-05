@@ -26,13 +26,18 @@ async function authenticate ({ email, password }) {
 }
 
 async function get (id) {
-  return await models.User.findOne({ id }, { _id: 0, __v: 0, hash: 0, email: 0, boards: 0 });
+  return await models.User.findOne({ id }, { _id: 0, __v: 0, hash: 0, email: 0, boards: 0 })
+    .catch(e => e);
 }
 
 async function getMultiple (array) {
   return await models.User.find({ id: { $in: array } }, { _id: 0, __v: 0, hash: 0, email: 0, boards: 0 });
 }
 
+const DEFAULT_SETTINGS = {
+  theme: 0,
+  compact: false
+}
 async function create (obj) {
   const usernameExists = await models.User.findOne({ username: obj.username });
   const emailExists = await models.User.findOne({ email: obj.email });
@@ -60,7 +65,9 @@ async function create (obj) {
     username: obj.username || null,
     email: obj.email || null,
     avatar: obj.avatar || null,
-    badges: 0
+    badges: 0,
+    settings: DEFAULT_SETTINGS,
+    bot: false
   };
 
   // Hash password
