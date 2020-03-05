@@ -3,8 +3,10 @@ import Chatroom from './Chatroom';
 import Group from './../funcs/Group.js';
 import Note from './../funcs/Note.js';
 import User from './../funcs/User.js';
+import ActionLog from './../funcs/ActionLog.js';
 import Invite from './../funcs/Invite.js';
 import PermissionHandler from './../util/permissions';
+import ActionTypes from './../constants/ActionTypes';
 import { generateID, getBotUser, permissions } from './../util';
 import { model } from 'mongoose';
 
@@ -83,7 +85,7 @@ async function get (id) {
   return await models.Board.findOne({ id }, { _id: 0, __v: 0 });
 }
 
-async function edit (id, obj) {
+async function edit (id, obj, requesterID) {
   const original = await this.get(id);
   const board = {
     name: obj.name,
@@ -97,12 +99,21 @@ async function edit (id, obj) {
     owner: obj.owner
   };
   const newBoard = Object.assign(original, board);
-  await models.Board.updateOne({ id }, newBoard);
+  await models.Board.updateOne({ id }, newBoard).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.UPDATE_BOARD,
+      executor: requesterID,
+      before: original,
+      after: newBoard
+    });
+  });
   return newBoard;
 }
 
 async function del (id) {
-  return await models.Board.deleteOne({ id });
+  await models.Board.deleteOne({ id });
+  return true;
 }
 
 async function getNotes (id) {
@@ -178,7 +189,7 @@ async function getRanks (id) {
   return board.ranks;
 }
 
-async function addRank (id, rank) {
+async function addRank (id, rank, requesterID) {
   const board = await this.get(id);
   const lastPosition = board.ranks.sort((a, b) => b.position - a.position)[0].position + 1;
 
@@ -187,11 +198,19 @@ async function addRank (id, rank) {
     $addToSet: {
       'ranks': rank
     }
-  }, { upsert: true });
+  }, { upsert: true }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.ADD_RANK,
+      executor: requesterID,
+      before: null,
+      after: rank
+    });
+  });
   return rank;
 }
 
-async function removeRank (id, rank) {
+async function removeRank (id, rank, requesterID) {
   await models.Board.updateOne({ id, ranks: { $elemMatch: { 'id': rank.id, 'position': { $gte: rank.position } } } }, {
     $pull: {
       'ranks': { $in: rank }
@@ -199,11 +218,19 @@ async function removeRank (id, rank) {
     $inc: {
       'ranks.$': { position: -1 }
     }
-  }, { upsert: true });
+  }, { upsert: true }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.REMOVE_RANK,
+      executor: requesterID,
+      before: rank,
+      after: null
+    });
+  });
   return rank;
 }
 
-async function updateRank (id, rank) {
+async function updateRank (id, rank, requesterID) {
   const board = await this.get(id);
   const oldRankIndex = board.ranks.findIndex(r => r.id === rank.id);
   const oldRank = board.ranks[oldRankIndex];
@@ -218,16 +245,33 @@ async function updateRank (id, rank) {
     $set: {
       [`ranks.${oldRankIndex}`]: newRank
     }
-  }, { upsert: true });
+  }, { upsert: true }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.UPDATE_RANK,
+      executor: requesterID,
+      before: oldRank,
+      after: newRank
+    });
+  });
   return newRank;
 }
 
-async function applyRankToUser (id, user, rank) {
+/*
+async function applyRankToUser (id, user, rank, requesterID) {
   await models.Member.updateOne({ id: user, board: id }, {
     $addToSet: {
       'ranks': rank
     }
-  }, { upsert: true });
+  }, { upsert: true }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.UPDATE_MEMBER,
+      executor: requesterID,
+      before: null,
+      after: { rank }
+    });
+  });
   return rank;
 }
 
@@ -236,11 +280,20 @@ async function removeRankFromUser (id, user, rank) {
     $pull: {
       'ranks': { $in: rank }
     },
-  }, { upsert: true });
+  }, { upsert: true }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.UPDATE_MEMBER,
+      executor: requesterID,
+      before: { rank },
+      after: null
+    });
+  });
   return rank;
 }
+*/
 
-async function addLabel (id, label) {
+async function addLabel (id, label, requesterID) {
   const board = await this.get(id);
   const lastPosition = (board.labels || []).length ? board.labels.sort((a, b) => b.position - a.position)[0].position + 1 : 0;
 
@@ -249,11 +302,18 @@ async function addLabel (id, label) {
     $addToSet: {
       'labels': label
     }
-  }, { upsert: true });
+  }, { upsert: true }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.ADD_LABEL,
+      executor: requesterID
+    });
+  });
+  
   return label;
 }
 
-async function removeLabel (id, label) {
+async function removeLabel (id, label, requesterID) {
   await models.Board.updateOne({ id, ranks: { $elemMatch: { 'id': label.id, 'position': { $gte: label.position } } } }, {
     $pull: {
       'labels': { $in: label }
@@ -261,11 +321,17 @@ async function removeLabel (id, label) {
     $inc: {
       'labels.$': { position: -1 }
     }
-  }, { upsert: true });
+  }, { upsert: true }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.REMOVE_LABEL,
+      executor: requesterID
+    });
+  })
   return label;
 }
 
-async function updateLabel (id, rank) {
+async function updateLabel (id, label, requesterID) {
   const board = await this.get(id);
   const oldLabelIndex = board.labels.findIndex(r => r.id === labels.id);
   const oldLabel = board.labels[oldLabelIndex];
@@ -275,11 +341,20 @@ async function updateLabel (id, rank) {
     color: label.color,
     position: label.position
   }
+
   await models.Board.updateOne({ id }, {
     $set: {
-      [`ranks.${oldLabelIndex}`]: newLabel
+      [`labels.${oldLabelIndex}`]: newLabel
     }
-  }, { upsert: true });
+  }, { upsert: true }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.UPDATE_LABEL,
+      executor: requesterID,
+      before: oldLabel,
+      after: newLabel
+    });
+  });
   return newLabel;
 }
 
@@ -291,11 +366,24 @@ async function editMember (id, memberID, memberObj, requesterID) {
     nickname: memberObj.nickname,
     ranks: memberObj.ranks,
   }
-  await models.Member.updateOne({ id: memberID, board: id }, newMember, { upsert: true });
+
+  await models.Member.updateOne({ id: memberID, board: id }, newMember, { upsert: true }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.UPDATE_MEMBER,
+      executor: requesterID,
+      before: oldMember,
+      after: newMember
+    });
+  });
   return newMember;
 }
 
-async function join (id, user) {
+async function join (id, user, requesterID) {
+  const board = this.get(id);
+  if (board.members.includes(user)) {
+    throw new Error('This user is already a member of this board')
+  }
   await models.Board.updateOne({ id }, {
     $addToSet: {
       'members': user
@@ -309,12 +397,23 @@ async function join (id, user) {
     board: id,
     ranks: [ id ]
   };
+
   const dbBoard = new models.Member(member);
-  await dbBoard.save();
+  await dbBoard.save().then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.ADD_MEMBER,
+      executor: requesterID
+    });
+  });
   return Object.assign(await User.get(user), member);
 }
 
-async function leave (id, user) {
+async function leave (id, user, requesterID) {
+  const board = this.get(id);
+  if (board.owner === user) {
+    throw new Error('The board owner cannot leave the board');
+  }
   await models.Board.updateOne({ id: id }, {
     $filter: {
       input: 'members',
@@ -324,8 +423,13 @@ async function leave (id, user) {
       }
     }
   });
-
-  await models.Member.deleteOne({ id: user, board: id });
+  await models.Member.deleteOne({ id: user, board: id }).then(() => {
+    ActionLog.create({
+      boardID: id,
+      type: ActionTypes.REMOVE_MEMBER,
+      executor: requesterID
+    });
+  });
   return id;
 }
 
@@ -346,8 +450,6 @@ export default {
   addRank,
   removeRank,
   updateRank,
-  applyRankToUser,
-  removeRankFromUser,
   editMember,
   addLabel,
   updateLabel,
