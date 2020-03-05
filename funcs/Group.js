@@ -1,9 +1,11 @@
 import models from './../models';
 import { generateID } from '../util';
+import ActionLog from './../funcs/ActionLog.js';
+import ActionTypes from './../constants/ActionTypes';
 
-async function create (obj) {
-  if (!obj.boardID) {
-    throw new Error('A board ID needs to be provided in the request body');
+async function create (boardID, obj, requesterID) {
+  if (!boardID) {
+    throw new Error('Board ID is not valid');
   }
 
   const id = generateID();
@@ -11,8 +13,8 @@ async function create (obj) {
     id,
     name: obj.name || null,
     type: 0,
-    createdAt: new Date().toISOString(),
-    modifiedAt: new Date().toISOString(),
+    createdAt: Date.now(),
+    modifiedAt: Date.now(),
     blacklist: [], // user IDs or rank IDs
     items: [],
     position: obj.position || { x: 0, y: 0 },
@@ -23,10 +25,18 @@ async function create (obj) {
   const dbGroup = new models.Group(group);
   await dbGroup.save();
   try {
-    await models.Board.updateOne({ id: obj.boardID }, {
+    await models.Board.updateOne({ id: boardID }, {
       $push: {
         groups: id
       }
+    }).then(() => {
+      ActionLog.create({
+        boardID,
+        type: ActionTypes.CREATE_GROUP,
+        executor: requesterID,
+        before: null,
+        after: group
+      });
     });
   } catch (e) {
     throw new Error('Error whilst trying to apply note to board, make sure the board exists and is valid.');
@@ -34,19 +44,28 @@ async function create (obj) {
   return group;
 }
 
-async function update (obj) {
+async function update (boardID, obj, requesterID) {
+  const original = await this.get(obj.id);
   const group = {
     id: obj.id,
     name: obj.name || null,
     type: obj.type || 0,
-    modifiedAt: new Date().toISOString(),
+    modifiedAt: Date.now(),
     blacklist: obj.blacklist,
     items: obj.items,
     position: obj.position,
     size: obj.size,
     options: obj.options
   };
-  await models.Group.updateOne({ id: obj.id }, group);
+  await models.Group.updateOne({ id: obj.id }, group).then(() => {
+    ActionLog.create({
+      boardID,
+      type: ActionTypes.CREATE_GROUP,
+      executor: requesterID,
+      before: original,
+      after: group
+    });
+  });
   return group;
 }
 
@@ -58,8 +77,18 @@ async function get (id) {
   return await models.Group.findOne({ id }, { _id: 0, __v: 0 });
 }
 
-async function del (id) {
-  return await models.Group.deleteOne({ id }, { _id: 0, __v: 0 });
+async function del (boardID, id, requesterID) {
+  const group = await this.get(id);
+  await models.Group.deleteOne({ id }, { _id: 0, __v: 0 }).then(() => {
+    ActionLog.create({
+      boardID,
+      type: ActionTypes.CREATE_GROUP,
+      executor: requesterID,
+      before: group,
+      after: null
+    });
+  });
+  return true;
 }
 
 export default {
