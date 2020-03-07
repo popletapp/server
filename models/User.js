@@ -23,8 +23,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  settings: {
-    type: Object, // { theme: 0, compact: Boolean }
+  theme: {
+    type: Number,
+    required: true
+  },
+  compact: {
+    type: Boolean,
+    required: true
+  },
+  lang: {
+    type: String,
     required: true
   },
   bot: {
