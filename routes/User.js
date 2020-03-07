@@ -28,7 +28,7 @@ router.get(`/me/boards`, authorization, (req, res, next) => {
 })
 
 router.get(`/me`, authorization, async (req, res, next) => {
-  await User.get(req.user.id)
+  await User.get(req.user.id, true)
         .then(user => user ? res.json(user) : res.status(403))
         .catch(err => next(err));
 })
@@ -39,8 +39,17 @@ router.get(`/:id/boards`, authorization, (req, res, next) => {
         .catch(err => next(err));
 })
 
+router.patch(`/:id`, authorization, async (req, res, next) => {
+  if (req.user.id !== req.params.id) {
+    return res.status(403);
+  }
+  User.edit(req.params.id, req.body)
+        .then(user => user ? res.status(200).json(user) : res.status(403))
+        .catch(err => next(err));
+})
+
 router.get(`/:id`, authorization, async (req, res, next) => {
-  await User.get(req.params.id)
+  await User.get(req.params.id, req.user.id === req.params.id)
         .then(user => user ? res.status(200).json(user) : res.status(403))
         .catch(err => next(err));
 })

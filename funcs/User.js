@@ -25,8 +25,12 @@ async function authenticate ({ email, password }) {
   }
 }
 
-async function get (id) {
-  return await models.User.findOne({ id }, { _id: 0, __v: 0, hash: 0, email: 0, boards: 0 })
+async function get (id, returnEverything = false) {
+  let returnValue = { _id: 0, __v: 0, hash: 0, email: 0, boards: 0, compact: 0, theme: 0, lang: 0 };
+  if (returnEverything) {
+    returnValue = { _id: 0, __v: 0, hash: 0, email: 0, boards: 0 };
+  }
+  return await models.User.findOne({ id }, returnValue)
     .catch(e => e);
 }
 
@@ -66,7 +70,9 @@ async function create (obj) {
     email: obj.email || null,
     avatar: obj.avatar || null,
     badges: 0,
-    settings: DEFAULT_SETTINGS,
+    theme: 0,
+    compact: false,
+    lang: 'en',
     bot: false
   };
 
@@ -78,6 +84,26 @@ async function create (obj) {
   const dbUser = new models.User(user);
   await dbUser.save();
   return user;
+}
+
+async function edit (id, obj) {
+  const original = await this.get(id);
+  // Hash password
+  if (obj.password) {
+    obj.hash = bcrypt.hashSync(obj.password, 12);
+  }
+  delete obj.password;
+  const user = {
+    email: obj.email,
+    avatar: obj.avatar,
+    hash: obj.hash,
+    theme: obj.theme,
+    compact: obj.compact,
+    lang: obj.lang,
+  };
+  const newUser = Object.assign(original, user);
+  await models.User.updateOne({ id }, newUser);
+  return newUser;
 }
 
 async function listBoards (id) {
@@ -100,6 +126,7 @@ export default {
   create,
   listBoards,
   get,
+  edit,
   getMultiple,
   logout
 }
