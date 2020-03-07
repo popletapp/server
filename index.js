@@ -86,6 +86,9 @@ app.use(`${API_URL}/chatrooms`, Chatroom)
 app.use(`${API_URL}/invites`, Invite)
 app.use(`${API_URL}/blog`, Blog)
 
+// Image server
+app.use(imageServer);
+
 // HSTS support
 app.get('/*', function(req, res, next) {
   res.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
@@ -103,9 +106,6 @@ app.get('*', (req, res) => {
     }
   })
 })
-
-// Image server
-app.use(imageServer);
 
 app.use(function (err, req, res, next) {
   console.error(err.stack)
