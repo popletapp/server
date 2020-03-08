@@ -44,15 +44,14 @@ const DEFAULT_NOTE = {
 async function create (obj) {
   const id = obj.boardID = generateID();
   const chatroom = await Chatroom.create(obj);
-  const note = await Note.create({ ...DEFAULT_NOTE, boardID: id });
   const board = {
     id,
     createdAt: Date.now(),
     name: obj.name || null,
     type: obj.type || 0,
     avatar: obj.avatar || null,
-    members: [ obj.user.id ],
-    notes: [ note.id ],
+    members: [],
+    notes: [],
     chatrooms: [ chatroom.id ],
     ranks: [
       { ...DEFAULT_RANK, id }
@@ -64,8 +63,10 @@ async function create (obj) {
   };
   
   const dbBoard = new models.Board(board);
-  await dbBoard.save();
-  await join(id, obj.user.id);
+  await dbBoard.save().then(async () => {
+    await Note.create(id, { ...DEFAULT_NOTE }, '0');
+  });
+  await this.join(id, obj.user.id);
   return board;
 }
 
@@ -380,7 +381,7 @@ async function editMember (id, memberID, memberObj, requesterID) {
 }
 
 async function join (id, user, requesterID) {
-  const board = this.get(id);
+  const board = await this.get(id);
   if (board.members.includes(user)) {
     throw new Error('This user is already a member of this board')
   }
@@ -410,7 +411,7 @@ async function join (id, user, requesterID) {
 }
 
 async function leave (id, user, requesterID) {
-  const board = this.get(id);
+  const board = await this.get(id);
   if (board.owner === user) {
     throw new Error('The board owner cannot leave the board');
   }
