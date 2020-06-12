@@ -47,7 +47,7 @@ class PermissionsHandler {
       bitfield |= rank.permissions;
     }
 
-    if (PermissionsHandler.isDeveloper(this.member.id)) {
+    if (DEVELOPER_IDS.includes(this.member.id)) {
       return this.PERMISSIONS;
     }
 

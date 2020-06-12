@@ -3,6 +3,7 @@ import { generateID } from '../util';
 import { Board } from './';
 import ActionLog from './../funcs/ActionLog.js';
 import ActionTypes from './../constants/ActionTypes';
+import HomeContentTypes from '../constants/HomeContentTypes';
 
 async function create (boardID, obj, requesterID) {
   if (!boardID) {
@@ -12,7 +13,7 @@ async function create (boardID, obj, requesterID) {
   if (!board) {
     throw new Error('Couldn\'t find a board under that board ID, make sure the board exists and is valid');
   }
-  const ref = board.notes.length ? (board.notes.map(n => n.reference).sort((a, b) => b - a)[0] || 0) + 1 : 1;
+  const ref = (board.noteCount || 0) + 1;
   const id = generateID();
   const note = {
     id,
@@ -38,6 +39,9 @@ async function create (boardID, obj, requesterID) {
     await models.Board.updateOne({ id: boardID }, {
       $push: {
         notes: id
+      },
+      $inc: {
+        noteCount: 1
       }
     }).then(() => {
       ActionLog.create({
@@ -84,6 +88,9 @@ async function update (boardID, obj, requesterID) {
     if (deepEqual(oldNote, newNote)) {
       ELIGIBLE_PERMISSIONS.push('MOVE_NOTES');
     }
+    if (oldNote.assignees.length !== newNote.assignees.length) {
+      HomeContent.create({ user: friend, type: HomeContentTypes.ASSIGNED_TO_NOTE, value: { user: id } });
+    }
     const authorized = await Board.authorize(boardID, obj.user.id, ELIGIBLE_PERMISSIONS);
     if (authorized) {
       // Would love to .then this but mongo has an internal cache 😔
@@ -104,6 +111,7 @@ async function update (boardID, obj, requesterID) {
 
 async function del (boardID, id, requesterID) {
   const note = await this.get(id);
+  await models.NoteComment.deleteMany({ note: id });
   await models.Note.deleteOne({ id }).then(() => {
     ActionLog.create({
       boardID,
@@ -113,7 +121,47 @@ async function del (boardID, id, requesterID) {
       after: null
     });
   });
+  await models.Board.updateOne({ id: boardID }, {
+    $inc: { noteCount: -1 }
+  })
   return true;
+}
+
+async function comment (boardID, obj, requesterID) {
+  const comment = {
+    id: generateID(),
+    note: obj.note,
+    timestamp: Date.now(),
+    author: obj.author,
+    content: obj.content
+  };
+
+  const dbComment = new models.NoteComment(comment);
+  await dbComment.save().then(async () => {
+    ActionLog.create({
+      boardID,
+      type: ActionTypes.CREATE_NOTE_COMMENT,
+      executor: requesterID,
+      before: null,
+      after: comment
+    });
+  });
+  return comment;
+}
+
+async function getComment (id) {
+  return await models.NoteComment.findOne({ id });
+}
+
+async function getComments (id, limit = 20, position = 0) {
+  if (limit > 50) {
+    limit = 50;
+  }
+  if (limit < 2) {
+    limit = 2;
+  }
+  console.log(await models.NoteComment.find({ note: id }))
+  return await models.NoteComment.find({ note: id }).sort({ 'timestamp': -1 }).skip(position).limit(limit);
 }
 
 async function getMultiple (array) {
@@ -129,5 +177,8 @@ export default {
   update,
   del,
   getMultiple,
-  get
+  get,
+  comment,
+  getComment,
+  getComments
 }
