@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 
+/*
+PermissionOverrideType (Number)
+0 = USER, 1 = RANK, 2 = INVITE (members invited through a specific invite)
+*/
+
 const groupSchema = new mongoose.Schema({
   id: {
     type: String,
@@ -7,6 +12,9 @@ const groupSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date
+  },
+  createdBy: {
+    type: Object
   },
   modifiedAt: {
     type: Date
@@ -17,8 +25,8 @@ const groupSchema = new mongoose.Schema({
   type: {
     type: Number
   },
-  blacklist: {
-    type: Array // of member IDs
+  permissionOverrides: {
+    type: Array // array of objects { id: String, type: PermissionOverrideType, bitfield: Number }
   },
   items: {
     type: Array // of note IDs (or other things maybe)
@@ -30,7 +38,7 @@ const groupSchema = new mongoose.Schema({
     type: Object // width, height
   },
   options: {
-    type: Object // other things like color, position, width/height
+    type: Object // compact, autoResize
   }
 });
 

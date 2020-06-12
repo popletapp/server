@@ -12,13 +12,18 @@ import Group from './Group';
 import Invite from './Invite';
 import BlogPost from './BlogPost';
 import ActionLog from './ActionLog';
+import NoteComment from './NoteComment';
+import Notification from './Notification';
+import HomeContent from './HomeContent';
+import Friend from './Friend';
 
 const connectDb = () => {
   return mongoose.connect(config.databaseUrl);
 };
 
 const models = { User, ChatroomComment, Token, Board, Note, 
-  Chatroom, Member, Group, Invite, BlogPost, ActionLog };
+  Chatroom, Member, Group, Invite, BlogPost, ActionLog,
+  Notification, NoteComment, HomeContent, Friend };
 
 export { connectDb };
 

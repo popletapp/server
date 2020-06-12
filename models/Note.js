@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 
+/*
+PermissionOverrideType (Number)
+0 = USER, 1 = RANK, 2 = INVITE (members invited through a specific invite)
+*/
+
 const noteSchema = new mongoose.Schema({
   id: {
     type: String,
@@ -11,6 +16,9 @@ const noteSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date
+  },
+  createdBy: {
+    type: Object
   },
   modifiedAt: {
     type: Date
@@ -44,6 +52,9 @@ const noteSchema = new mongoose.Schema({
   },
   options: {
     type: Object // compact, autoResize
+  },
+  permissionOverrides: {
+    type: Array // array of objects { id: String, type: PermissionOverrideType, bitfield: Number }
   }
 });
 

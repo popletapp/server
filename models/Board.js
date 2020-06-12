@@ -23,6 +23,9 @@ const boardSchema = new mongoose.Schema({
   notes: {
     type: Array // of note IDs (even if they're inside of a group - this will be handled on the web app)
   },
+  noteCount: {
+    type: Number
+  },
   groups: {
     type: Array // of group IDs
   },

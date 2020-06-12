@@ -21,7 +21,11 @@ const memberSchema = new mongoose.Schema({
 
 memberSchema.statics.findByBoard = async function (board, id) {
   const member = await this.findOne({ board, id }, { _id: 0, __v: 0});
-  return Object.assign({}, await User.get(id)._doc, member._doc)
+  if (!member) {
+    return null;
+  }
+  const user = await User.get(id);
+  return Object.assign({}, user._doc, member._doc)
 };
 
 const Member = mongoose.model('Member', memberSchema);
