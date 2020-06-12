@@ -52,6 +52,7 @@ async function create (obj) {
     avatar: obj.avatar || null,
     members: [],
     notes: [],
+    noteCount: 1,
     chatrooms: [ chatroom.id ],
     ranks: [
       { ...DEFAULT_RANK, id }
@@ -113,6 +114,17 @@ async function edit (id, obj, requesterID) {
 }
 
 async function del (id) {
+  const board = await this.get(id);
+  if (board.notes.length) {
+    await models.NoteComment.deleteMany({ note: { $in: board.notes } });
+    await models.Note.deleteMany({ id: { $in: board.notes } });
+  }
+  if (board.groups.length) {
+    await models.Group.deleteMany({ id: { $in: board.groups } });
+  }
+  if (board.chatrooms.length) {
+    await models.Chatroom.deleteMany({ id: { $in: board.chatrooms } });
+  }
   await models.Board.deleteOne({ id });
   return true;
 }
