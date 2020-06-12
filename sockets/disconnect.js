@@ -1,5 +1,5 @@
-exports.handle = ({ data }) => {
+exports.handle = ({ data, redis }) => {
   if (data && data.userID && data.authToken) {
-    rclient.del(`wsclient-${data.userID}`, data)
+    redis.del(`wsclient-${data.userID}`)
   }
 }

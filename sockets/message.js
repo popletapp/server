@@ -18,7 +18,7 @@ const PermissionMap = {
   REMOVE_MEMBER: [ 'KICK_MEMBERS', 'BAN_MEMBERS', 'MODERATOR' ]
 }
 
-exports.handle = async ({ client, data }) => {
+exports.handle = async ({ client, data, redis }) => {
   if (data && data.type && data.board) {
     if (data.type === 'JOIN_BOARD') {
       client.join(board)
@@ -31,7 +31,13 @@ exports.handle = async ({ client, data }) => {
     // Ensure this user is in the board and/or has the correct permissions
     const authorized = await Board.authorize(data.board, client.userID, PermissionMap[data.type]);
     if (authorized) {
-      client.to(data.board).emit('message', data)
+      const eventCount = await redis.get(`${client.userID}-${data.board}-events`);
+      if (!eventCount) {
+        redis.set(`${client.userID}-${data.board}-events`, 1);
+      } else {
+        redis.set(`${client.userID}-${data.board}-events`, eventCount + 1);
+      }
+      client.to(data.board).emit('message', data);
     }
   }
 }

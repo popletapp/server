@@ -8,7 +8,7 @@ exports.handle = ({ client, data, io, redis }) => {
       console.log('Authorized')
       redis.set(`wsclient-${data.userID}`, data)
       client.userID = data.userID;
-      connect.handle({ client, io });
+      connect.handle({ client, io, redis });
     });
   }
 }
