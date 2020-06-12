@@ -1,4 +1,6 @@
 import models from '../models';
+import ActionLog from './../funcs/ActionLog.js';
+import ActionTypes from './../constants/ActionTypes';
 
 async function create (boardID, obj, requesterID) {
   if (!boardID) {
@@ -18,7 +20,7 @@ async function create (boardID, obj, requesterID) {
   await dbInvite.save().then(() => {
     ActionLog.create({
       boardID,
-      type: ActionTypes.DELETE_INVITE,
+      type: ActionTypes.CREATE_INVITE,
       executor: requesterID,
       before: invite,
       after: null

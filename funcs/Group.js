@@ -14,6 +14,7 @@ async function create (boardID, obj, requesterID) {
     name: obj.name || null,
     type: 0,
     createdAt: Date.now(),
+    createdBy: obj.user,
     modifiedAt: Date.now(),
     blacklist: [], // user IDs or rank IDs
     items: [],

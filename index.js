@@ -128,4 +128,4 @@ connectDb().then(async () => {
   );
 });
 
-export default { ws: io }
+export default { ws: io, redis: rclient }
