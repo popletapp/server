@@ -33,9 +33,13 @@ async function getMultiple (array) {
   return await models.ActionLog.find({ id: { $in: array } }, { _id: 0, __v: 0 });
 }
 
-async function get (boardID, type, limit = 10, skip = 0) {
+async function get (boardID, type, limit = 10, skip = 0, customQuery) {
   limit = Math.min(limit, 100);
-  return await models.ActionLog.find(type ? { boardID, type } : { boardID }, { _id: 0, __v: 0 }).sort({ 'timestamp': -1 }).skip(skip).limit(limit);
+  let query = type ? { boardID, type } : { boardID };
+  if (customQuery) {
+    query = customQuery;
+  }
+  return await models.ActionLog.find(query, { _id: 0, __v: 0 }).sort({ 'timestamp': -1 }).skip(skip).limit(limit);
 }
 
 export default {
