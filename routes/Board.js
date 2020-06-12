@@ -30,8 +30,8 @@ router.put(`/:id/members/:member`, authorization, async (req, res, next) => {
     const invites = await Invite.getAll(req.params.id);
     // If invite is correct
     if (invites.find(invite => invite.code === req.body.invite)) {
-      if (Board.authorize(req.params.id, req.params.member)) {
-        return res.status(403).json({ message: 'This user is already a member of this board' })
+      if (await Board.authorize(req.params.id, req.params.member)) {
+        return res.status(400).json({ message: 'This user is already a member of this board' })
       }
       Board.join(req.params.id, req.params.member, req.user.id)
           .then((member) => res.status(200).json(member))
@@ -192,6 +192,22 @@ router.delete(`/:id/notes/:note`, authorization, function (req, res, next) {
     Note.del(req.params.id, req.params.note, req.user.id)
         .then((note) => note ? res.status(200).json(note) : res.status(500))
         .catch(err => next(err));
+  }
+})
+
+router.post(`/:id/notes/:note/comments`, authorization, function (req, res, next) {
+  if (Board.authorize(req.params.id, req.user.id)) {
+    Note.comment(req.params.id, req.body, req.user.id)
+      .then((comment) => comment ? res.status(200).json(comment) : res.status(500))
+      .catch(err => next(err));
+  }
+})
+
+router.get(`/:id/notes/:note/comments`, authorization, function (req, res, next) {
+  if (Board.authorize(req.params.id, req.user.id)) {
+    Note.getComments(req.params.note)
+      .then((comment) => comment ? res.status(200).json(comment) : res.status(500))
+      .catch(err => next(err));
   }
 })
 
